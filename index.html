@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ko" id="html-root">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="노마디즘 — 중앙아시아 배낭여행자를 위한 실전 황금 루트 가이드와 공동 경비 정산기.">
+  <title>NOMADISM | Central Asia Golden Route Guide</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Split modular CSS stylesheet -->
+  <link rel="stylesheet" href="./src/styles/main.css">
+</head>
+<body>
+
+<div class="crt-interference"></div>
+<div id="toasts"></div>
+<div id="offline-banner" data-i18n="offline.banner">⚡ 오프라인 모드 — 저장된 지도 사용 중</div>
+
+<!-- ════════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════ -->
+<nav id="nav" style="display:none;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;padding:0 24px;height:70px;gap:16px;">
+
+    <button onclick="window.app.switchTab('main')" style="display:flex;align-items:center;gap:12px;background:none;border:none;cursor:pointer;flex-shrink:0;">
+      <div style="width:30px;height:30px;background:var(--text-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+        <span style="color:var(--bg-sandstone);font-weight:900;font-size:12px;font-family:inherit;">N</span>
+      </div>
+      <span style="font-size:18px;font-weight:900;letter-spacing:-.02em;color:var(--text-dark);font-family:inherit;">
+        NOMADISM
+      </span>
+    </button>
+
+    <div id="nav-links" style="display:flex;align-items:center;gap:24px;overflow-x:auto;">
+      <button onclick="window.app.switchTab('main')"      id="tab-main"      class="nav-tab active" data-i18n="nav.ai">AI 스케줄러</button>
+      <button onclick="window.app.switchTab('exchange')"  id="tab-exchange"  class="nav-tab" data-i18n="nav.finance">금융/환율</button>
+      <button onclick="window.app.switchTab('ticket')"    id="tab-ticket"    class="nav-tab" data-i18n="nav.store">로컬 스토어</button>
+      <button onclick="window.app.switchTab('community')" id="tab-community" class="nav-tab" data-i18n="nav.community">커뮤니티</button>
+
+      <!-- Language Selector -->
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+        <button class="lang-btn active" id="lang-ko" onclick="window.app.setLang('ko')">
+          🇰🇷 <span class="lang-text">KOR</span>
+        </button>
+        <div class="lang-sep"></div>
+        <button class="lang-btn" id="lang-en" onclick="window.app.setLang('en')">
+          🇺🇸 <span class="lang-text">ENG</span>
+        </button>
+        <div class="lang-sep"></div>
+        <button class="lang-btn" id="lang-ru" onclick="window.app.setLang('ru')">
+          🇷🇺 <span class="lang-text">RUS</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- FLOATING CURRENCY WIDGET -->
+<div id="float-widget" class="glass-panel" style="border-radius:20px;overflow:hidden;">
+  <div id="float-header" style="background:var(--base);padding:12px 18px;border-bottom:1px solid var(--b0);display:flex;justify-content:space-between;align-items:center;user-select:none;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="width:6px;height:6px;background:var(--green);border-radius:50%;" class="pulse"></span>
+      <span class="label" style="color:var(--tx1);" data-i18n="float.label">실시간 환율 계산</span>
+    </div>
+    <button onclick="window.app.closeFloat()" style="background:none;border:none;color:var(--tx2);cursor:pointer;font-size:14px;">✕</button>
+  </div>
+  <div style="padding:16px;background:var(--surface);">
+    <div style="margin-bottom:12px;">
+      <div class="label" style="color:var(--tx2);margin-bottom:6px;" data-i18n="float.input">KRW 입력</div>
+      <input type="number" id="float-krw" value="100000" class="inp" style="width:100%;padding:10px 14px;border-radius:10px;font-size:18px;font-weight:900;" oninput="window.app.convertCurrency('float-krw',this.value)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:var(--raised);padding:9px 12px;border-radius:10px;border:1px solid var(--b0);">
+        <div style="font-size:10px;color:var(--tx2);margin-bottom:2px;">USD</div>
+        <div id="float-usd" style="font-weight:900;color:var(--tx0);font-size:14px;">72.00 $</div>
+      </div>
+      <div style="background:var(--raised);padding:9px 12px;border-radius:10px;border:1px solid var(--b0);">
+        <div style="font-size:10px;color:var(--tx2);margin-bottom:2px;">KGS</div>
+        <div id="float-kgs" style="font-weight:900;color:var(--blue);font-size:14px;">6,240</div>
+      </div>
+      <div style="background:var(--raised);padding:9px 12px;border-radius:10px;border:1px solid var(--b0);">
+        <div style="font-size:10px;color:var(--tx2);margin-bottom:2px;">KZT</div>
+        <div id="float-kzt" style="font-weight:900;color:var(--blue);font-size:14px;">34,720</div>
+      </div>
+      <div style="background:var(--raised);padding:9px 12px;border-radius:10px;border:1px solid var(--b0);">
+        <div style="font-size:10px;color:var(--tx2);margin-bottom:2px;">UZS</div>
+        <div id="float-uzs" style="font-weight:900;color:var(--blue);font-size:14px;">913,040</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     LOBBY / MAIN LOBBY SCREEN (HYPER-DREAMS STYLE)
+════════════════════════════════════════════ -->
+<div id="page-landing">
+  <div class="l-bg">
+    <div class="l-orb l-o1"></div>
+    <div class="l-orb l-o2"></div>
+    <div class="l-orb l-o3"></div>
+    <div class="l-grid"></div>
+    <div id="l-dots"></div>
+  </div>
+  
+  <div class="l-top">
+    <div class="l-top-lbl">NOMADISM // DISPATCH ENGINE</div>
+    <div class="l-lang-row">
+      <button onclick="window.app.setLang('ko')" class="l-lang-btn on" id="l-lang-ko-lobby">KOR</button>
+      <span class="l-lang-sep">/</span>
+      <button onclick="window.app.setLang('en')" class="l-lang-btn" id="l-lang-en-lobby">ENG</button>
+      <span class="l-lang-sep">/</span>
+      <button onclick="window.app.setLang('ru')" class="l-lang-btn" id="l-lang-ru-lobby">RUS</button>
+    </div>
+  </div>
+
+  <div class="l-content">
+    <div class="l-eyebrow">CENTRAL ASIA EXPEDITION</div>
+    <h1 class="l-logo">N★M<br><span class="l-logo-g">NOMADISM</span></h1>
+    <p class="l-tagline">중앙아시아 배낭여행자를 위한<br>오버랜드 가이드 & 실시간 공동 경비 정산기</p>
+    <button class="l-cta" onclick="window.app.startApp()">
+      START COMPASS
+      <span class="l-cta-arr">→</span>
+    </button>
+  </div>
+
+  <div class="l-foot">
+    <div>ANCIENT ROUTES, MODERN COMPASS</div>
+    <div>2026© EDITION v2.6</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TAB 1 — AI PLANNER
+════════════════════════════════════════════ -->
+<main id="page-main" class="tab-content" style="padding-top:70px;padding-bottom:80px;">
+  <div style="max-width:1400px;margin:0 auto;padding:24px 24px 0;">
+
+    <button onclick="window.app.switchTab('lobby')" class="lobby-back-btn" style="margin-bottom:32px;">
+      ← LOBBY
+    </button>
+
+    <header style="margin-bottom:40px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="width:6px;height:6px;background:var(--blue);border-radius:50%;" class="pulse"></span>
+        <span class="label" style="color:var(--blue);" data-i18n="hero.tag">Nomadism</span>
+      </div>
+      <h1 style="font-size:clamp(38px,5.5vw,76px);font-weight:900;letter-spacing:-.04em;line-height:1.04;color:var(--tx0);margin-bottom:18px;">
+        <span data-i18n="hero.h1a">노마디즘</span><br>
+        <span style="background:linear-gradient(130deg,var(--lapis-lazuli),var(--terracotta),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;" data-i18n="hero.h1b">NOMADISM</span>
+      </h1>
+      <p style="font-size:17px;color:var(--tx1);font-weight:400;max-width:680px;line-height:1.75;" data-i18n="hero.desc">
+        중앙아시아 배낭여행자를 위한 실전 황금 루트 가이드와 공동 경비 정산기.
+      </p>
+    </header>
+
+    <!-- Weather Strip -->
+    <div id="weather-strip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+      <div class="skel" style="height:84px;border-radius:var(--r-md);"></div>
+      <div class="skel" style="height:84px;border-radius:var(--r-md);"></div>
+      <div class="skel" style="height:84px;border-radius:var(--r-md);"></div>
+    </div>
+
+    <!-- Planner Grid -->
+    <div class="planner-grid" style="display:grid;grid-template-columns:360px 1fr;gap:24px;">
+
+      <!-- Sidebar -->
+      <div class="glass-inp-panel" style="padding:32px;display:flex;flex-direction:column;gap:28px;position:relative;z-index:10;box-shadow:0 12px 36px rgba(0,0,0,0.03);">
+
+        <div>
+          <div class="label" style="color:var(--blue);margin-bottom:10px;" data-i18n="plan.from">1. 출발 도시</div>
+          <div class="inp" style="display:flex;align-items:center;gap:12px;padding:0 16px;">
+            <span id="in-city-flag" style="display:inline-flex;align-items:center;height:24px;flex-shrink:0;">
+              <svg class="flag-svg" width="20" height="14" viewBox="0 0 24 16" style="border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.15);display:inline-block;vertical-align:middle;">
+                <rect width="24" height="5.33" fill="#0099B5"/>
+                <rect y="5.33" width="24" height="5.33" fill="#FFFFFF"/>
+                <rect y="10.67" width="24" height="5.33" fill="#1EB53A"/>
+                <rect y="5" width="24" height="0.33" fill="#CE1126"/>
+                <rect y="10.67" width="24" height="0.33" fill="#CE1126"/>
+              </svg>
+            </span>
+            <select id="in-city" style="flex:1;border:none;background:transparent;outline:none;padding:14px 0;font-size:16px;font-weight:800;color:var(--tx0);cursor:pointer;font-family:inherit;appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:url(&quot;data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 0px center;background-size:14px;padding-right:24px;" onchange="window.app.onCityChange()">
+              <option value="타슈켄트" data-i18n-opt="city.tashkent">우즈베키스탄 — 타슈켄트</option>
+              <option value="비슈케크" data-i18n-opt="city.bishkek">키르기스스탄 — 비슈케크</option>
+              <option value="알마티"   data-i18n-opt="city.almaty">카자흐스탄 — 알마티</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="label" style="color:var(--indigo);margin-bottom:10px;" data-i18n="plan.to">2. 최종 목적지</div>
+          <div class="inp" style="display:flex;align-items:center;gap:12px;padding:0 16px;">
+            <span id="out-city-flag" style="display:inline-flex;align-items:center;height:24px;flex-shrink:0;">
+              <svg class="flag-svg" width="20" height="14" viewBox="0 0 24 16" style="border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.15);display:inline-block;vertical-align:middle;">
+                <rect width="24" height="16" fill="#00AFCA"/>
+                <circle cx="12" cy="7" r="2.5" fill="#FEC10E"/>
+                <path d="M 9.5 10.5 Q 12 8.5 14.5 10.5 Q 12 9.8 9.5 10.5" fill="#FEC10E"/>
+                <rect x="0" y="0" width="1.5" height="16" fill="#FEC10E"/>
+              </svg>
+            </span>
+            <select id="out-city" style="flex:1;border:none;background:transparent;outline:none;padding:14px 0;font-size:16px;font-weight:800;color:var(--tx0);cursor:pointer;font-family:inherit;appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:url(&quot;data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 0px center;background-size:14px;padding-right:24px;" onchange="window.app.onCityChange()">
+              <option value="타슈켄트" data-i18n-opt="city.tashkent">우즈베키스탄 — 타슈켄트</option>
+              <option value="비슈케크" data-i18n-opt="city.bishkek">키르기스스탄 — 비슈케크</option>
+              <option value="알마티"   data-i18n-opt="city.almaty" selected>카자흐스탄 — 알마티</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="label" style="color:var(--tx2);margin-bottom:10px;" data-i18n="plan.duration">3. 체류 기간</div>
+          <div class="inp" style="display:flex;align-items:center;padding:8px 16px;border-radius:14px;">
+            <input type="number" id="travel-days" min="3" max="60" value="15" style="flex:1;background:transparent;border:none;outline:none;font-size:38px;font-weight:900;color:var(--tx0);text-align:center;font-family:inherit;">
+            <span style="color:var(--tx2);font-weight:700;font-size:13px;padding-right:4px;" data-i18n="unit.days">DAYS</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:auto;">
+          <button onclick="window.app.generateItinerary()" class="btn btn-white" style="width:100%;padding:18px;border-radius:14px;font-size:16px;letter-spacing:.02em;" data-i18n="btn.generate">
+            초정밀 일정 생성
+          </button>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div style="position:relative;background:rgba(255,255,255,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,0.06);border-radius:24px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,0.03);">
+        <div id="map-main" style="opacity:.87;"></div>
+        <div style="position:absolute;top:14px;right:14px;z-index:1000;display:flex;flex-direction:column;gap:8px;">
+          <button onclick="window.app.toggleSatellite()" id="sat-btn" class="map-btn" data-i18n="map.satellite">🛰 위성 보기</button>
+          <button onclick="window.app.saveOffline()" class="map-btn" style="color:var(--green);font-weight:800;" data-i18n="map.offline">📥 오프라인 저장</button>
+        </div>
+    </div>
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════
+     TAB 2 — FINANCE
+════════════════════════════════════════════ -->
+<main id="page-exchange" class="tab-content" style="padding-top:70px;padding-bottom:80px;">
+  <div style="max-width:1200px;margin:0 auto;padding:24px 24px 0;">
+    <button onclick="window.app.switchTab('lobby')" class="lobby-back-btn" style="margin-bottom:32px;">
+      ← LOBBY
+    </button>
+    <header style="margin-bottom:40px;border-bottom:1px solid var(--b0);padding-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <h2 style="font-size:46px;font-weight:900;letter-spacing:-.03em;color:var(--tx0);margin-bottom:10px;" data-i18n="fin.title">금융 및 환율 데이터</h2>
+        <p style="font-size:17px;color:var(--tx1);" data-i18n="fin.desc">원하는 화폐 칸에 입력하면 모든 통화가 즉시 상호 변환됩니다.</p>
+      </div>
+      
+      <!-- Real-time Rate Sync Action Button -->
+      <button id="sync-rates-btn" class="btn btn-white" style="padding:12px 24px;border-radius:12px;font-size:13px;display:inline-flex;gap:8px;align-items:center;" data-i18n="fx.btn_sync">
+        🔄 실시간 환율 업데이트
+      </button>
+    </header>
+
+    <div class="glass-panel" style="padding:44px;border-radius:28px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px;">
+        
+        <!-- Global Currency Column -->
+        <div>
+          <div class="label" style="color:var(--tx1);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--b0);" data-i18n="fin.global">글로벌 기준 통화</div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <!-- KRW Anchor Field -->
+            <div>
+              <div class="label" style="color:var(--tx2);margin-bottom:8px;" data-i18n="fin.krw">대한민국 원 (KRW)</div>
+              <div class="inp" style="display:flex;align-items:center;padding:8px 16px;border-radius:14px;background:var(--raised);">
+                <input type="number" id="main-krw-val" value="100000" style="flex:1;background:transparent;border:none;outline:none;font-size:26px;font-weight:900;color:var(--tx0);padding:8px;font-family:inherit;" oninput="window.app.convertCurrency('main-krw-val',this.value)">
+                <span style="color:var(--tx2);font-size:18px;font-weight:900;padding-right:6px;">₩</span>
+              </div>
+            </div>
+            <!-- Global Choice 1 -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="label" style="color:var(--tx2);" data-i18n="fin.g1">글로벌 통화 1</span>
+                <select id="main-g1-sel" class="inp" style="padding:4px 8px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;">
+                  <option value="usd">USD ($)</option>
+                  <option value="eur">EUR (€)</option>
+                  <option value="chf">CHF (Fr)</option>
+                  <option value="krw">KRW (₩)</option>
+                </select>
+              </div>
+              <div class="inp" style="display:flex;align-items:center;padding:8px 16px;border-radius:14px;background:var(--raised);">
+                <input type="number" id="main-g1-val" value="66.23" style="flex:1;background:transparent;border:none;outline:none;font-size:26px;font-weight:900;color:var(--tx0);padding:8px;font-family:inherit;" oninput="window.app.convertCurrency('main-g1-val',this.value)">
+              </div>
+            </div>
+            <!-- Global Choice 2 -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="label" style="color:var(--tx2);" data-i18n="fin.g2">글로벌 통화 2</span>
+                <select id="main-g2-sel" class="inp" style="padding:4px 8px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;">
+                  <option value="eur" selected>EUR (€)</option>
+                  <option value="usd">USD ($)</option>
+                  <option value="chf">CHF (Fr)</option>
+                  <option value="krw">KRW (₩)</option>
+                </select>
+              </div>
+              <div class="inp" style="display:flex;align-items:center;padding:8px 16px;border-radius:14px;background:var(--raised);">
+                <input type="number" id="main-g2-val" value="60.47" style="flex:1;background:transparent;border:none;outline:none;font-size:26px;font-weight:900;color:var(--tx0);padding:8px;font-family:inherit;" oninput="window.app.convertCurrency('main-g2-val',this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Central Asia Local Currency Column -->
+        <div>
+          <div class="label" style="color:var(--blue);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--b0);" data-i18n="fin.local">중앙아시아 로컬 통화</div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <!-- Local Choice 1 -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="label" style="color:var(--tx2);" data-i18n="fin.l1">로컬 통화 1</span>
+                <select id="main-l1-sel" class="inp" style="padding:4px 8px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;">
+                  <option value="kgs">KGS (Som)</option>
+                  <option value="kzt">KZT (Tenge)</option>
+                  <option value="uzs">UZS (Sum)</option>
+                  <option value="tjs">TJS (Somoni)</option>
+                  <option value="tmt">TMT (Manat)</option>
+                </select>
+              </div>
+              <div class="inp" style="display:flex;align-items:center;padding:8px 16px;border-radius:14px;background:var(--raised);">
+                <input type="number" id="main-l1-val" value="5894" style="flex:1;background:transparent;border:none;outline:none;font-size:26px;font-weight:900;color:var(--blue);padding:8px;font-family:inherit;" oninput="window.app.convertCurrency('main-l1-val',this.value)">
+              </div>
+            </div>
+            <!-- Local Choice 2 -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span class="label" style="color:var(--tx2);" data-i18n="fin.l2">로컬 통화 2</span>
+                <select id="main-l2-sel" class="inp" style="padding:4px 8px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;">
+                  <option value="kzt" selected>KZT (Tenge)</option>
+                  <option value="kgs">KGS (Som)</option>
+                  <option value="uzs">UZS (Sum)</option>
+                  <option value="tjs">TJS (Somoni)</option>
+                  <option value="tmt">TMT (Manat)</option>
+                </select>
+              </div>
+              <div class="inp" style="display:flex;align-items:center;padding:8px 16px;border-radius:14px;background:var(--raised);">
+                <input type="number" id="main-l2-val" value="32450" style="flex:1;background:transparent;border:none;outline:none;font-size:26px;font-weight:900;color:var(--blue);padding:8px;font-family:inherit;" oninput="window.app.convertCurrency('main-l2-val',this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--b0);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:6px;height:6px;background:var(--green);border-radius:50%;" class="pulse"></span>
+          <span style="font-size:11px;color:var(--tx2);font-weight:600;letter-spacing:.05em;" data-i18n="fin.rate">기준: 1 USD ≈ 1,510 KRW · 1.38 EUR · 89 KGS · 490 KZT · 12,850 UZS</span>
+        </div>
+        <span style="font-size:11px;color:var(--tx3);" data-i18n="fin.date">2026.07 현지 시세 기준</span>
+      </div>
+
+      <!-- OVERLAND SHARED SETTLEMENT COMPONENT (Advanced Receipt Style) -->
+      <div style="margin-top:36px;padding-top:32px;border-top:1px dashed var(--b1);">
+        <div style="margin-bottom:20px;">
+          <h3 style="font-size:20px;font-weight:800;color:var(--tx0);margin-bottom:6px;" data-i18n="dutch.title">오버랜드 공동 경비 정산</h3>
+          <p style="font-size:13px;color:var(--tx2);" data-i18n="dutch.desc">지출한 여러 경비 내역을 추가하면 실시간 환율을 기준으로 합산 및 배분하여 정밀한 공동 경비 리포트를 출력합니다.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:24px;">
+          <!-- Left: Add Expense Form & List -->
+          <div style="background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.5); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:24px; padding:28px; box-shadow:0 8px 32px rgba(13,13,13,0.03);">
+            <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;margin-bottom:18px;">
+              <div>
+                <div class="label" style="color:var(--tx2);margin-bottom:6px;" data-i18n="dutch.item_label">지출 항목명</div>
+                <input type="text" id="dutch-item-name" class="inp" style="width:100%;padding:10px 14px;border-radius:10px;font-size:14px;" placeholder="예: 식비, 숙박비">
+              </div>
+              <div>
+                <div class="label" style="color:var(--tx2);margin-bottom:6px;" data-i18n="dutch.amount">지출 금액</div>
+                <input type="number" id="dutch-item-amount" class="inp" style="width:100%;padding:10px 14px;border-radius:10px;font-size:14px;">
+              </div>
+              <div>
+                <div class="label" style="color:var(--tx2);margin-bottom:6px;" data-i18n="dutch.currency">결제 통화</div>
+                <select id="dutch-item-currency" class="inp" style="width:100%;padding:10px 14px;border-radius:10px;font-size:14px;cursor:pointer;">
+                  <option value="krw">KRW (₩)</option>
+                  <option value="usd">USD ($)</option>
+                  <option value="eur">EUR (€)</option>
+                  <option value="chf">CHF (Fr)</option>
+                  <option value="kgs">KGS (Som)</option>
+                  <option value="kzt">KZT (Tenge)</option>
+                  <option value="uzs">UZS (Sum)</option>
+                  <option value="tjs">TJS (Somoni)</option>
+                  <option value="tmt">TMT (Manat)</option>
+                </select>
+              </div>
+            </div>
+            
+            <button onclick="window.app.addExpenseItem()" class="btn btn-white" style="width:100%;padding:12px;border-radius:10px;font-size:13px;" data-i18n="dutch.add_btn">
+              ➕ 지출 항목 추가
+            </button>
+
+            <!-- Expense List Table -->
+            <div style="margin-top:24px;">
+              <div class="label" style="color:var(--tx2);margin-bottom:10px;" data-i18n="dutch.list_title">등록된 지출 내역</div>
+              <div style="max-height:220px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;">
+                  <thead>
+                    <tr style="border-bottom:1px solid var(--b1);color:var(--tx2);font-size:11px;">
+                      <th style="padding:8px;text-align:left;" data-i18n="dutch.th_item">항목</th>
+                      <th style="padding:8px;text-align:right;" data-i18n="dutch.th_amount">금액</th>
+                      <th style="padding:8px;text-align:right;" data-i18n="dutch.th_currency">통화</th>
+                      <th style="padding:8px;text-align:center;width:40px;" data-i18n="dutch.th_delete">삭제</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dutch-list">
+                    <!-- Dynamic Expense list items render -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: People Configuration & Settlement Receipt Result -->
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div>
+              <div class="label" style="color:var(--tx2);margin-bottom:8px;" data-i18n="dutch.people">정산 인원수 (명)</div>
+              <input type="number" id="dutch-people" value="4" min="1" class="inp" style="width:100%;padding:12px 16px;border-radius:12px;font-size:16px;font-weight:900;" oninput="window.app.calcDutchpay()">
+            </div>
+            
+            <div style="background:rgba(255,255,255,0.48); border:1px solid rgba(255,255,255,0.6); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:24px; padding:28px; box-shadow:0 8px 32px rgba(13,13,13,0.03); flex:1; display:flex; flex-direction:column;">
+              <div class="label" style="color:var(--blue);margin-bottom:16px;font-weight:800;" data-i18n="dutch.result">👤 1인당 공동 경비 정산 결과</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex:1;align-content:start;" id="dutch-grid">
+                <!-- Dynamic Shared Settlement calculation results -->
+              </div>
+              <div id="dutch-category-chart"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════
+     TAB 3 — LOCAL STORE
+════════════════════════════════════════════ -->
+<main id="page-ticket" class="tab-content" style="padding-top:70px;padding-bottom:80px;">
+  <div style="max-width:1400px;margin:0 auto;padding:24px 24px 0;">
+    <button onclick="window.app.switchTab('lobby')" class="lobby-back-btn" style="margin-bottom:32px;">
+      ← LOBBY
+    </button>
+    <header style="margin-bottom:40px;border-bottom:1px solid var(--b0);padding-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;">
+      <div>
+        <h2 style="font-size:46px;font-weight:900;letter-spacing:-.03em;color:var(--tx0);margin-bottom:10px;" data-i18n="store.title">로컬 스토어 &amp; 인프라</h2>
+        <p style="font-size:17px;color:var(--tx1);" data-i18n="store.desc">국가별 필수 투어부터 eSIM, 보험까지 통합 예약.</p>
+      </div>
+      <div style="display:flex;gap:6px;background:var(--surface);padding:6px;border-radius:12px;border:1px solid var(--b0);">
+        <button onclick="window.app.filterStore('all',this)" class="store-tab" style="background:black;color:white;padding:7px 16px;border-radius:8px;font-size:11px;font-weight:800;border:none;cursor:pointer;font-family:inherit;" data-i18n="store.filter.all">전체</button>
+        <button onclick="window.app.filterStore('kg',this)"     class="store-tab" style="background:transparent;color:var(--tx2);padding:7px 14px;border-radius:8px;font-size:11px;font-weight:800;border:none;cursor:pointer;transition:.2s;font-family:inherit;">🇰🇬 <span data-i18n="store.filter.kg">키르기스</span></button>
+        <button onclick="window.app.filterStore('kz',this)"     class="store-tab" style="background:transparent;color:var(--tx2);padding:7px 14px;border-radius:8px;font-size:11px;font-weight:800;border:none;cursor:pointer;transition:.2s;font-family:inherit;">🇰🇿 <span data-i18n="store.filter.kz">카자흐</span></button>
+        <button onclick="window.app.filterStore('uz',this)"     class="store-tab" style="background:transparent;color:var(--tx2);padding:7px 14px;border-radius:8px;font-size:11px;font-weight:800;border:none;cursor:pointer;transition:.2s;font-family:inherit;">🇺🇿 <span data-i18n="store.filter.uz">우즈벡</span></button>
+        <button onclick="window.app.filterStore('common',this)" class="store-tab" style="background:transparent;color:var(--tx2);padding:7px 14px;border-radius:8px;font-size:11px;font-weight:800;border:none;cursor:pointer;transition:.2s;font-family:inherit;">🌐 <span data-i18n="store.filter.common">공통</span></button>
+      </div>
+    </header>
+
+    <div id="store-grid" class="store-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+      <!-- Cards built by buildStoreCards() after lang load -->
+    </div>
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════
+     TAB 4 — COMMUNITY
+════════════════════════════════════════════ -->
+<main id="page-community" class="tab-content" style="padding-top:70px;padding-bottom:80px;">
+  <div style="max-width:1400px;margin:0 auto;padding:24px 24px 0;">
+    <button onclick="window.app.switchTab('lobby')" class="lobby-back-btn" style="margin-bottom:32px;">
+      ← LOBBY
+    </button>
+    <header style="margin-bottom:40px;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--b0);padding-bottom:28px;flex-wrap:wrap;gap:18px;">
+      <div>
+        <h2 style="font-size:46px;font-weight:900;letter-spacing:-.03em;color:var(--tx0);margin-bottom:10px;" data-i18n="comm.title">여행자 커뮤니티</h2>
+        <p style="font-size:17px;color:var(--tx1);max-width:560px;" data-i18n="comm.desc">실시간 국경 상황, 얀덱스 요금 정보, 동행 모집을 가입 절차 없이 이용하세요.</p>
+      </div>
+      <button onclick="window.app.toggleWriteForm()" class="btn btn-white" style="padding:13px 26px;border-radius:13px;font-size:13px;" data-i18n="comm.write">✏️ 새 글 작성</button>
+    </header>
+
+    <div id="write-form" style="display:none;margin-bottom:28px;">
+      <div class="glass-panel" style="border-radius:24px;">
+        <div style="padding:36px;">
+          <h3 style="font-size:20px;font-weight:800;color:var(--tx0);margin-bottom:24px;" data-i18n="comm.form.title">게시물 작성</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <input type="text" id="post-author" class="inp" style="padding:14px 18px;border-radius:12px;font-size:15px;font-family:inherit;" data-i18n-ph="comm.ph.nick">
+            <input type="password" id="post-pw" class="inp" style="padding:14px 18px;border-radius:12px;font-size:15px;font-family:inherit;" data-i18n-ph="comm.ph.pw">
+          </div>
+          <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+            <select id="post-type" class="inp" style="padding:14px 18px;border-radius:12px;font-weight:700;cursor:pointer;font-size:15px;font-family:inherit;min-width:160px;">
+              <option value="일반"  data-i18n-opt="ptype.general">일반글</option>
+              <option value="정보"  data-i18n-opt="ptype.info">현지정보</option>
+              <option value="질문"  data-i18n-opt="ptype.question">질문/답변</option>
+              <option value="동행"  data-i18n-opt="ptype.companion">동행모집</option>
+              <option value="경고"  data-i18n-opt="ptype.warning">스캠경고</option>
+            </select>
+            <input type="text" id="post-title" class="inp" style="padding:14px 18px;border-radius:12px;font-weight:700;font-size:15px;flex:1;font-family:inherit;" data-i18n-ph="comm.ph.title">
+          </div>
+          <textarea id="post-body" class="inp" style="width:100%;height:180px;resize:none;padding:18px;border-radius:12px;font-size:15px;margin-bottom:18px;font-family:inherit;line-height:1.7;" data-i18n-ph="comm.ph.body"></textarea>
+          <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <button onclick="window.app.toggleWriteForm()" class="btn btn-ghost" style="padding:12px 22px;border-radius:11px;font-size:13px;" data-i18n="comm.cancel">취소</button>
+            <button onclick="window.app.submitPost()" class="btn btn-accent" style="padding:12px 28px;border-radius:11px;font-size:13px;" data-i18n="comm.submit">등록 완료</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--b0);border-radius:22px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:1fr 110px 110px;gap:14px;padding:14px 26px;border-bottom:1px solid var(--b0);background:var(--raised);">
+        <div class="label" style="color:var(--tx2);" data-i18n="comm.col.topic">토픽 / 제목</div>
+        <div class="label" style="color:var(--tx2);text-align:center;" data-i18n="comm.col.author">작성자</div>
+        <div class="label" style="color:var(--tx2);text-align:center;" data-i18n="comm.col.time">등록</div>
+      </div>
+      <div id="post-list"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════
+     ROUTE MODAL
+════════════════════════════════════════════ -->
+<div id="modal-route" class="sensory-dashboard-bg">
+  <div style="padding: 40px 24px 20px; max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: baseline;">
+    <div>
+      <h2 style="font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 900; letter-spacing: -0.03em; color: var(--text-dark); text-transform: uppercase;">OVERLANDER PROFILE</h2>
+      <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.1em;" id="dash-user-label">NOMADIC DISPATCH // ACTIVE</span>
+    </div>
+    <button onclick="window.app.closeModal()" class="btn btn-ghost" style="padding: 10px 20px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-color: rgba(13,13,13,0.1); color: var(--text-dark); background: rgba(13,13,13,0.02);">
+      ← CLOSE DASHBOARD
+    </button>
+  </div>
+
+  <div style="padding: 0 24px; max-width: 1400px; margin: 0 auto;">
+    <!-- 1. Top metrics counters row -->
+    <div class="metrics-row" style="display: flex; gap: 40px; margin-bottom: 32px; flex-wrap: wrap; align-items: center;">
+      <div>
+        <div class="dot-matrix" style="font-size: 48px; line-height: 1; color: var(--text-dark);" id="res-days-matrix">15</div>
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Total Days</span>
+      </div>
+      <div style="width: 1px; background: var(--border-grid); height: 40px;"></div>
+      <div>
+        <div class="dot-matrix" style="font-size: 48px; line-height: 1; color: var(--text-dark);" id="res-stops-count">5</div>
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Cities Planned</span>
+      </div>
+      <div style="width: 1px; background: var(--border-grid); height: 40px;"></div>
+      <div>
+        <div class="dot-matrix" style="font-size: 48px; line-height: 1; color: var(--text-dark);" id="res-flow-score">82</div>
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Route Flow Score</span>
+      </div>
+      <div style="width: 1px; background: var(--border-grid); height: 40px;"></div>
+      <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; font-weight: 800; color: var(--text-muted);">
+          <span id="progress-lbl" data-i18n="progress.lbl">여정 달성률 PROGRESS</span>
+          <span id="progress-percent" style="font-family: var(--font-mono); color: var(--lapis-lazuli); font-size: 13px;">0%</span>
+        </div>
+        <div style="height: 10px; background: rgba(13, 13, 13, 0.05); border-radius: 5px; overflow: hidden; border: 1px solid rgba(13, 13, 13, 0.02);">
+          <div id="progress-fill-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--lapis-lazuli), var(--cyan)); transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Sensory Cards Grid -->
+    <div class="sensory-grid" style="display: grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap: 24px; margin-bottom: 36px;">
+      
+      <!-- Card 1: Route Flow -->
+      <div class="sensory-card bg-steppe-green" style="position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 250px; padding: 28px;">
+        <div class="glow-blob green" style="right: -20px; top: -20px;"></div>
+        <div style="position: relative; z-index: 10;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Superpower Score</span>
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-dark); margin-top: 4px;">ROUTE FLOW</h3>
+        </div>
+        <div style="position: relative; z-index: 10; display: flex; align-items: baseline; gap: 12px; margin: 15px 0;">
+          <div class="dot-matrix" style="font-size: 64px; line-height: 1; color: var(--text-dark);" id="res-flow-score-matrix">82</div>
+          <span style="font-size: 13px; font-weight: 800; color: #0f766e; background: rgba(15,118,110,0.08); padding: 2px 10px; border-radius: 20px;" id="res-flow-label">Optimal</span>
+        </div>
+        <div style="position: relative; z-index: 10; font-size: 12px; color: var(--text-muted); line-height: 1.6;" id="res-flow-desc">
+          자연(트레킹)과 도심 인프라가 조화를 이루는 최적화된 동선입니다.
+        </div>
+      </div>
+
+      <!-- Card 2: Travel Rhythm -->
+      <div class="sensory-card bg-desert-amber" style="position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 250px; padding: 28px;">
+        <div class="glow-blob amber" style="right: -20px; top: -20px;"></div>
+        <div style="position: relative; z-index: 10;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Biological Age</span>
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-dark); margin-top: 4px;">TRAVEL RHYTHM</h3>
+        </div>
+        <div style="position: relative; z-index: 10; display: flex; align-items: baseline; gap: 12px; margin: 15px 0;">
+          <div class="dot-matrix" style="font-size: 64px; line-height: 1; color: var(--text-dark);" id="res-rhythm-matrix">15</div>
+          <span style="font-size: 13px; font-weight: 800; color: var(--terracotta); background: rgba(194,89,63,0.08); padding: 2px 10px; border-radius: 20px;" id="res-rhythm-label">여유로움</span>
+        </div>
+        <div style="position: relative; z-index: 10; font-size: 12px; color: var(--text-muted); line-height: 1.6;" id="res-rhythm-desc">
+          평균 2.5일당 1회 이동하는 몸이 편안한 유목 리듬입니다.
+        </div>
+      </div>
+
+      <!-- Card 3: Pending Results (Border status check) -->
+      <div class="sensory-card bg-rose-dusk" style="position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 250px; padding: 28px;">
+        <div class="glow-blob rose" style="right: -20px; top: -20px;"></div>
+        <button style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 16px; color: var(--text-muted); cursor: pointer; z-index: 20;">✕</button>
+        <div style="position: relative; z-index: 10;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Attention Required</span>
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 900; color: var(--text-dark); margin-top: 4px;">BORDER STATUS</h3>
+        </div>
+        <div style="position: relative; z-index: 10; margin: 15px 0;">
+          <span style="font-size: 22px; font-weight: 900; color: var(--text-dark); letter-spacing: -0.02em;" id="dash-border-name">국경 통과 확인</span>
+          <p style="font-size: 11.5px; color: #be123c; font-weight: 800; margin-top: 4px;" id="dash-border-sub">코르다이(Korday) 국경 개방</p>
+        </div>
+        <div style="position: relative; z-index: 10; font-size: 12px; color: var(--text-muted); line-height: 1.6;" id="dash-border-desc">
+          카자흐스탄-키르기스스탄 주요 육로 국경이 양호하게 통행 가능합니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Biomarkers -->
+    <h3 style="font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 900; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.15em;">BIOMARKERS (실시간 여정 지표)</h3>
+    <div class="biomarkers-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px;">
+      
+      <!-- Weather Biomarker -->
+      <div class="sensory-card" style="padding: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em;">WEATHER</span>
+          <span style="font-size: 13px;">☀️</span>
+        </div>
+        <div>
+          <div class="dot-matrix" style="font-size: 26px; line-height: 1.1;" id="dash-weather-temp">24°C</div>
+          <span style="font-size: 10.5px; color: #0f766e; font-weight: 700;" id="dash-weather-status">맑음 · 이동 양호</span>
+        </div>
+      </div>
+
+      <!-- Altitude Biomarker -->
+      <div class="sensory-card" style="padding: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em;">MAX ALTITUDE</span>
+          <span style="font-size: 13px;">🏔️</span>
+        </div>
+        <div>
+          <div class="dot-matrix" style="font-size: 26px; line-height: 1.1;" id="dash-alt-max">1,760m</div>
+          <span style="font-size: 10.5px; color: var(--terracotta); font-weight: 700;" id="dash-alt-status">안정적인 해발고도</span>
+        </div>
+      </div>
+
+      <!-- FX Biomarker -->
+      <div class="sensory-card" style="padding: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em;">EXCHANGE</span>
+          <span style="font-size: 13px;">💵</span>
+        </div>
+        <div>
+          <div class="dot-matrix" style="font-size: 26px; line-height: 1.1;" id="dash-fx-rate">89.0</div>
+          <span style="font-size: 10.5px; color: var(--lapis-lazuli); font-weight: 700;" id="dash-fx-status">1 USD = 89 KGS</span>
+        </div>
+      </div>
+
+      <!-- Transit Biomarker -->
+      <div class="sensory-card" style="padding: 20px; background: #ffffff; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.05em;">TRANSIT DIFFICULTY</span>
+          <span style="font-size: 13px;">🚌</span>
+        </div>
+        <div>
+          <div class="dot-matrix" style="font-size: 26px; line-height: 1.1;" id="dash-transit-diff">LV.3</div>
+          <span style="font-size: 10.5px; color: var(--terracotta); font-weight: 700;" id="dash-transit-status">이동 피로도 보통</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Dual Column Split -->
+    <div class="modal-split-container" style="margin-bottom: 60px;">
+      <!-- Left Column: Full-Height Map -->
+      <div id="map-modal" class="modal-map-fixed" style="border-radius: 28px; border: 1px solid rgba(13,13,13,0.03); box-shadow: 0 12px 36px rgba(13,13,13,0.02); overflow: hidden;"></div>
+
+      <!-- Right Column: Scrollable Timeline Checklist -->
+      <div class="modal-timeline-scroll" style="position:relative; overflow:hidden;">
+        <div style="position:relative; padding-left:14px; padding-right:12px; height: 100%;">
+          <div style="position:absolute;left:38px;top:0;bottom:0;width:1px;background:var(--border-grid);"></div>
+          <div style="display:flex;flex-direction:column;gap:16px;" id="timeline-container"></div>
+        </div>
+        
+        <!-- Sliding detail drawer for Day details -->
+        <div id="day-detail-drawer" style="position: absolute; inset: 0; background: rgba(250, 246, 240, 0.97); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); z-index: 100; transform: translateX(100%); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1); padding: 32px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; border-left: 1px solid rgba(13,13,13,0.06);">
+          <!-- Populated dynamically inside map.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     INTEGRATED PAYMENT MODAL (NOMADISM PAYMENT CENTER)
+════════════════════════════════════════════ -->
+<div id="modal-payment">
+  <div class="glass-panel" style="max-width:500px;width:92%;margin:60px auto;border-radius:28px;overflow:hidden;box-shadow:0 16px 40px rgba(13,13,13,0.08);border:1px solid var(--b0);position:relative;">
+
+    <!-- Header: 선택된 상품 요약 -->
+    <div style="padding:24px 26px 18px;border-bottom:1px solid var(--b0);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="font-size:18px;font-weight:900;color:var(--tx0);margin:0;">결제하기</h3>
+        <button onclick="window.app.closePaymentModal()" style="background:var(--g2);border:none;color:var(--tx1);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <div style="background:var(--raised);border:1px solid var(--b0);border-radius:14px;padding:14px 16px;">
+        <div style="font-size:11px;color:var(--cyan);font-weight:700;margin-bottom:5px;">선택 상품</div>
+        <div id="pay-item-name" style="font-size:15px;font-weight:800;color:var(--tx0);margin-bottom:6px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:11px;color:var(--tx1);">결제 금액</span>
+          <span style="font-size:20px;font-weight:900;color:var(--blue);"><span id="pay-item-price"></span> <span id="pay-item-cur" style="font-size:11px;font-weight:400;color:var(--tx1);"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 예약자 정보 -->
+    <div style="padding:18px 26px;border-bottom:1px solid var(--b0);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <div style="font-size:11px;color:var(--tx1);margin-bottom:5px;">예약자 실명</div>
+          <input type="text" id="pay-user-name" class="inp" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13px;" placeholder="홍길동">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--tx1);margin-bottom:5px;">이메일</div>
+          <input type="email" id="pay-user-email" class="inp" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13px;" placeholder="name@email.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- 결제 수단 탭 (로고 버튼) -->
+    <div style="padding:18px 26px 0;">
+      <div style="font-size:11px;color:var(--tx1);margin-bottom:10px;">결제 수단</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+
+        <!-- KakaoPay -->
+        <button onclick="window.app.switchPayMethod('kakao')" id="pay-tab-kakao" class="pay-method-tab" style="
+          padding:12px 6px;border-radius:12px;border:2px solid transparent;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;gap:5px;
+          background:#FEE500;transition:all .2s;font-family:inherit;">
+          <svg width="52" height="16" viewBox="0 0 90 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="22" font-size="22" font-weight="900" fill="#3A1D1D" font-family="Arial,sans-serif">kakao</text>
+            <text x="57" y="22" font-size="22" font-weight="900" fill="#3A1D1D" font-family="Arial,sans-serif">pay</text>
+          </svg>
+        </button>
+
+        <!-- NaverPay -->
+        <button onclick="window.app.switchPayMethod('naver')" id="pay-tab-naver" class="pay-method-tab" style="
+          padding:12px 6px;border-radius:12px;border:2px solid transparent;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;gap:5px;
+          background:#03C75A;transition:all .2s;font-family:inherit;">
+          <svg width="52" height="16" viewBox="0 0 90 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="22" font-size="20" font-weight="900" fill="white" font-family="Arial,sans-serif">NAVER</text>
+            <text x="56" y="22" font-size="20" font-weight="700" fill="white" font-family="Arial,sans-serif">Pay</text>
+          </svg>
+        </button>
+
+        <!-- TossPay -->
+        <button onclick="window.app.switchPayMethod('toss')" id="pay-tab-toss" class="pay-method-tab" style="
+          padding:12px 6px;border-radius:12px;border:2px solid transparent;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;gap:5px;
+          background:#0064FF;transition:all .2s;font-family:inherit;">
+          <svg width="40" height="16" viewBox="0 0 70 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="22" font-size="22" font-weight="900" fill="white" font-family="Arial,sans-serif">toss</text>
+          </svg>
+        </button>
+
+        <!-- PayPal -->
+        <button onclick="window.app.switchPayMethod('paypal')" id="pay-tab-paypal" class="pay-method-tab" style="
+          padding:12px 6px;border-radius:12px;border:2px solid transparent;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;gap:5px;
+          background:white;transition:all .2s;font-family:inherit;border:1px solid #ddd;">
+          <svg width="52" height="16" viewBox="0 0 100 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="0" y="22" font-size="22" font-weight="900" fill="#003087" font-family="Arial,sans-serif">Pay</text>
+            <text x="40" y="22" font-size="22" font-weight="900" fill="#009cde" font-family="Arial,sans-serif">Pal</text>
+          </svg>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- QR 코드 영역 (모든 결제 수단 공통) -->
+    <div style="padding:20px 26px;">
+
+      <!-- Kakao QR Panel -->
+      <div id="pay-panel-kakao" class="pay-panel qr-panel" style="display:none;">
+        <div style="background:#FEE500;border-radius:16px;padding:20px;text-align:center;">
+          <div style="font-size:13px;font-weight:900;color:#3A1D1D;margin-bottom:14px;">📱 카카오페이로 결제하기</div>
+          <div style="background:white;border-radius:12px;padding:12px;display:inline-block;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            <img id="qr-kakao" src="" alt="KakaoQR" style="width:140px;height:140px;display:block;">
+          </div>
+          <p style="font-size:11px;color:#5a3e00;margin-top:10px;line-height:1.5;">카카오페이 앱 또는 카카오톡에서<br>QR 스캔 후 결제를 승인하세요.</p>
+        </div>
+      </div>
+
+      <!-- Naver QR Panel -->
+      <div id="pay-panel-naver" class="pay-panel qr-panel" style="display:none;">
+        <div style="background:#03C75A;border-radius:16px;padding:20px;text-align:center;">
+          <div style="font-size:13px;font-weight:900;color:white;margin-bottom:14px;">💚 네이버페이로 결제하기</div>
+          <div style="background:white;border-radius:12px;padding:12px;display:inline-block;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            <img id="qr-naver" src="" alt="NaverQR" style="width:140px;height:140px;display:block;">
+          </div>
+          <p style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:10px;line-height:1.5;">네이버 앱 QR 스캔 또는 네이버페이<br>바코드 탭 → QR 결제를 선택하세요.</p>
+        </div>
+      </div>
+
+      <!-- Toss QR Panel -->
+      <div id="pay-panel-toss" class="pay-panel qr-panel" style="display:none;">
+        <div style="background:#0064FF;border-radius:16px;padding:20px;text-align:center;">
+          <div style="font-size:13px;font-weight:900;color:white;margin-bottom:14px;">💙 토스로 결제하기</div>
+          <div style="background:white;border-radius:12px;padding:12px;display:inline-block;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            <img id="qr-toss" src="" alt="TossQR" style="width:140px;height:140px;display:block;">
+          </div>
+          <p style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:10px;line-height:1.5;">토스 앱 → 결제 → QR 스캔으로<br>빠르게 결제를 완료하세요.</p>
+        </div>
+      </div>
+
+      <!-- PayPal QR Panel -->
+      <div id="pay-panel-paypal" class="pay-panel qr-panel" style="display:none;">
+        <div style="background:#003087;border-radius:16px;padding:20px;text-align:center;">
+          <div style="font-size:13px;font-weight:900;color:white;margin-bottom:14px;">💳 PayPal로 결제하기</div>
+          <div style="background:white;border-radius:12px;padding:12px;display:inline-block;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+            <img id="qr-paypal" src="" alt="PayPalQR" style="width:140px;height:140px;display:block;">
+          </div>
+          <p style="font-size:11px;color:rgba(255,255,255,0.75);margin-top:10px;line-height:1.5;">PayPal 앱 → 스캔 & 결제에서<br>QR을 인식하여 결제를 진행하세요.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Agreement Checkboxes + Actions -->
+    <div style="padding:0 26px 26px;display:flex;flex-direction:column;gap:10px;">
+      <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx1);cursor:pointer;">
+        <input type="checkbox" id="pay-agree-terms" style="accent-color:var(--blue);width:15px;height:15px;">
+        <span>(필수) 개인정보 제3자 제공 및 서비스 이용 약관 동의</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx1);cursor:pointer;">
+        <input type="checkbox" id="pay-agree-cancel" style="accent-color:var(--blue);width:15px;height:15px;">
+        <span>(필수) 오지 기후 악화·천재지변에 따른 환불 규정 동의</span>
+      </label>
+      <button onclick="window.app.submitPayment()" class="btn btn-accent" style="padding:15px;border-radius:14px;font-size:14px;font-weight:900;margin-top:6px;">
+        결제 완료
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- locales -->
+<script src="./src/locales/ko.js"></script>
+<script src="./src/locales/en.js"></script>
+<script src="./src/locales/ru.js"></script>
+
+<!-- modules -->
+<script src="./src/js/onboarding.js"></script>
+<script src="./src/js/weather.js"></script>
+<script src="./src/js/exchange.js"></script>
+<script src="./src/js/map.js"></script>
+<script src="./src/js/store.js"></script>
+<script src="./src/js/community.js"></script>
+<script src="./src/js/app.js"></script>
+</body>
+</html>

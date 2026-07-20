@@ -1,0 +1,28 @@
+[4988:10012:0708/031552.358:WARNING:chrome\browser\extensions\activity_log\activity_log_policy.cc:71] Scheduling init
+[4988:10012:0708/031552.360:WARNING:chrome\browser\extensions\activity_log\activity_log_policy.cc:71] Scheduling init
+[13244:10100:0708/031552.387:ERROR:ui\gl\direct_composition_support.cc:247] GetGpuDriverOverlayInfo: Failed to retrieve video device
+[4988:10012:0708/031552.572:WARNING:chrome\browser\extensions\external_registry_loader_win.cc:283] Error observing HKLM: 5
+[4988:10012:0708/031552.771:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.771:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.771:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.771:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://unpkg.com/leaflet@1.9.4/dist/leaflet.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.772:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031552.802:WARNING:components\signin\internal\identity_manager\account_fetcher_service.cc:231] Edge does not support fetching account capabilities
+[4988:10012:0708/031552.802:WARNING:components\signin\internal\identity_manager\account_fetcher_service.cc:192] Should not execute: Tests depending on this function may fail
+[4988:10012:0708/031552.810:ERROR:components\edge_auth\edge_auth_errors.cc:542] EDGE_IDENTITY: Image Fetch FAILED: Error: Primary Error: kAccountImageFetchFailure, Secondary Error: kUnspecified, Platform error: 0, Error string: [empty]
+
+[4988:10012:0708/031552.915:INFO:CONSOLE:3815] "[ProtocolLaunch] handler constructed; wiring port events.", source: chrome-extension://ndcpkimcihhghdcddljkfmmjccdmcmof/background.rollup.js (3815)
+[4988:10012:0708/031553.159:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031553.159:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031553.159:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031553.159:INFO:CONSOLE:0] "Tracking Prevention blocked access to storage for https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031553.559:INFO:CONSOLE:0] "Images loaded lazily and replaced with placeholders. Load events are deferred. See https://go.microsoft.com/fwlink/?linkid=2048113", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/index.html (0)
+[4988:10012:0708/031554.905:INFO:CONSOLE:174] "ServiceWorker registration failed: TypeError: Failed to register a ServiceWorker: The URL protocol of the current origin ('null') is not supported.", source: file:///C:/Users/kjy61/Desktop/central-asia-travel/src/js/app.js (174)
+[4988:10012:0708/031555.012:WARNING:chrome\browser\edge_personalized_data_collection\account_info_for_san.cc:88] Call to fetch child account info FAILED

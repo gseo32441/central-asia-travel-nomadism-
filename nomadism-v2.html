@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="ko" id="html-root">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NOMADISM — 중앙아시아 여행 OS</title>
+  <meta name="description" content="처음 중앙아시아를 가는 한국인을 위한 여행 설계 OS. 도시 간 이동·입국 준비·현지 결제를 불안 없이 결정하세요.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg:#EDEAE4; --bg-card:rgba(255,255,255,0.80); --bg-solid:#F5F2ED;
+  --bg-dark:#080D1A; --bg-dark2:#0F1625;
+  --glacier:#4A9EBC; --glacier-d:#2A7090;
+  --amber:#D07830; --amber-l:#E8A050;
+  --rose:#C46070; --steppe:#4A7A5A; --steppe-l:#6A9A7A;
+  --teal:#1A6B78; --sand:#D8C8B0;
+  --tx0:#141414; --tx1:#3A3A3A; --tx2:#808080; --tx3:#B4B4B4;
+  --txw:rgba(255,255,255,0.92); --txwm:rgba(255,255,255,0.50);
+  --sh-sm:0 2px 12px rgba(0,0,0,0.05),0 0 0 1px rgba(0,0,0,0.03);
+  --sh-md:0 4px 24px rgba(0,0,0,0.08),0 1px 4px rgba(0,0,0,0.04);
+  --sh-lg:0 12px 48px rgba(0,0,0,0.11),0 2px 8px rgba(0,0,0,0.05);
+  --r-xs:10px; --r-sm:14px; --r-md:20px; --r-lg:28px; --r-xl:36px; --r-p:999px;
+  --f-d:'Outfit',sans-serif; --f-b:'Inter',sans-serif; --f-m:'JetBrains Mono',monospace;
+  --dur:0.42s; --ease:cubic-bezier(0.4,0,0.2,1); --spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;}
+body{font-family:var(--f-b);background:var(--bg);color:var(--tx0);overflow:hidden;height:100vh;width:100vw;position:fixed;}
+button{cursor:pointer;font-family:inherit;border:none;background:none;}
+input{font-family:inherit;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.10);border-radius:4px;}
+
+.page{position:absolute;inset:0;opacity:0;pointer-events:none;transform:translateY(18px);transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease);overflow-y:auto;overflow-x:hidden;}
+.page.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.page.leaving{opacity:0;transform:translateY(-18px);}
+
+@keyframes orb-drift{0%{transform:translate(0,0) scale(1);}100%{transform:translate(40px,30px) scale(1.08);}}
+@keyframes dot-pulse{0%,100%{opacity:0.20;}50%{opacity:0.80;}}
+@keyframes capsule-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+@keyframes dot-blink{0%,100%{opacity:1;}50%{opacity:0.30;}}
+@keyframes fade-up{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.fu{animation:fade-up 0.55s var(--ease) both;}
+.fu1{animation-delay:0.07s;}.fu2{animation-delay:0.14s;}.fu3{animation-delay:0.22s;}
+.fu4{animation-delay:0.30s;}.fu5{animation-delay:0.38s;}
+
+.app-nav{position:sticky;top:0;z-index:200;background:rgba(237,234,228,0.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.04);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;gap:16px;}
+.nav-brand{font-family:var(--f-d);font-weight:900;font-size:17px;letter-spacing:-0.03em;color:var(--tx0);}
+.nav-seg{display:flex;align-items:center;background:rgba(0,0,0,0.06);border-radius:var(--r-p);padding:4px;}
+.nav-seg-btn{font-family:var(--f-b);font-size:12px;font-weight:600;color:var(--tx2);padding:5px 14px;border-radius:var(--r-p);transition:all 0.2s var(--ease);white-space:nowrap;}
+.nav-seg-btn.on{background:white;color:var(--tx0);box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.nav-lang-row{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.nav-lang-btn{font-family:var(--f-m);font-size:10px;font-weight:700;color:var(--tx3);transition:color 0.2s;}
+.nav-lang-btn.on{color:var(--tx0);}
+.nav-lang-sep{width:1px;height:10px;background:rgba(0,0,0,0.10);}
+
+.wrap{max-width:1120px;margin:0 auto;padding:40px 24px 80px;}
+.wrap-n{max-width:680px;}
+.eyebrow{font-family:var(--f-m);font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px;}
+.field-label{font-family:var(--f-m);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px;}
+
+/* LANDING */
+#page-landing{background:var(--bg-dark);display:flex;align-items:center;justify-content:center;}
+.l-bg{position:absolute;inset:0;overflow:hidden;}
+.l-orb{position:absolute;border-radius:50%;filter:blur(90px);animation:orb-drift 14s ease-in-out infinite alternate;}
+.l-o1{width:700px;height:700px;top:-200px;left:-150px;background:radial-gradient(circle,rgba(74,158,188,0.22),transparent 70%);}
+.l-o2{width:550px;height:550px;bottom:-180px;right:5%;background:radial-gradient(circle,rgba(208,120,48,0.18),transparent 70%);animation-delay:-5s;}
+.l-o3{width:420px;height:420px;top:25%;right:-80px;background:radial-gradient(circle,rgba(196,96,112,0.14),transparent 70%);animation-delay:-9s;}
+.l-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);background-size:64px 64px;}
+#l-dots{position:absolute;inset:0;}
+.l-top{position:absolute;top:28px;left:48px;right:48px;display:flex;justify-content:space-between;align-items:center;z-index:20;}
+.l-top-lbl{font-family:var(--f-m);font-size:10px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--txwm);}
+.l-lang-row{display:flex;align-items:center;gap:14px;}
+.l-lang-btn{font-family:var(--f-m);font-size:10px;font-weight:700;color:var(--txwm);transition:color 0.2s;}
+.l-lang-btn.on{color:var(--txw);}
+.l-lang-sep{width:1px;height:10px;background:rgba(255,255,255,0.12);}
+.l-content{position:relative;z-index:10;text-align:center;padding:40px 32px;max-width:820px;}
+.l-eyebrow{font-family:var(--f-m);font-size:10px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:var(--txwm);margin-bottom:28px;display:flex;align-items:center;justify-content:center;gap:14px;}
+.l-eyebrow::before,.l-eyebrow::after{content:'';height:1px;width:36px;background:rgba(255,255,255,0.12);}
+.l-logo{font-family:var(--f-d);font-weight:900;line-height:0.9;font-size:clamp(68px,11vw,120px);letter-spacing:-0.04em;color:var(--txw);margin-bottom:10px;}
+.l-logo-g{background:linear-gradient(135deg,var(--glacier) 0%,var(--amber) 50%,var(--rose) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.l-tagline{font-family:var(--f-d);font-size:clamp(15px,2.4vw,22px);font-weight:300;color:var(--txwm);line-height:1.5;margin-bottom:52px;}
+.l-cta{display:inline-flex;align-items:center;gap:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);color:var(--txw);font-family:var(--f-d);font-weight:700;font-size:15px;padding:17px 38px;border-radius:var(--r-p);transition:all 0.3s var(--ease);backdrop-filter:blur(12px);position:relative;overflow:hidden;}
+.l-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(74,158,188,0.22),rgba(208,120,48,0.12));opacity:0;transition:opacity 0.3s;}
+.l-cta:hover{border-color:rgba(255,255,255,0.28);transform:translateY(-2px);box-shadow:0 8px 36px rgba(74,158,188,0.22);}
+.l-cta:hover::before{opacity:1;}
+.l-cta-arr{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:13px;transition:transform 0.3s var(--spring);}
+.l-cta:hover .l-cta-arr{transform:translateX(4px);}
+.l-foot{position:absolute;bottom:28px;left:0;right:0;display:flex;justify-content:space-between;padding:0 48px;font-family:var(--f-m);font-size:10px;color:var(--txwm);letter-spacing:0.10em;}
+
+/* PLANNER */
+#page-planner{background:var(--bg);}
+.pl-title{font-family:var(--f-d);font-size:clamp(36px,6vw,58px);font-weight:900;letter-spacing:-0.035em;line-height:1.05;color:var(--tx0);}
+.pl-title em{font-style:normal;color:var(--teal);}
+.pl-card{background:var(--bg-card);border-radius:var(--r-lg);padding:26px;box-shadow:var(--sh-md);margin-bottom:14px;backdrop-filter:blur(10px);}
+.city-pills{display:flex;flex-wrap:wrap;gap:8px;}
+.city-pill{display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r-p);background:var(--bg-solid);border:2px solid transparent;font-family:var(--f-b);font-size:13px;font-weight:600;color:var(--tx1);cursor:pointer;transition:all 0.2s var(--ease);box-shadow:var(--sh-sm);}
+.city-pill:hover{border-color:rgba(26,107,120,0.25);color:var(--teal);}
+.city-pill.on{background:var(--teal);border-color:var(--teal);color:white;box-shadow:0 4px 16px rgba(26,107,120,0.32);}
+.dur-display{display:flex;align-items:baseline;gap:8px;margin-bottom:20px;}
+.dur-num{font-family:var(--f-d);font-size:58px;font-weight:900;letter-spacing:-0.04em;color:var(--tx0);line-height:1;}
+.dur-unit{font-family:var(--f-b);font-size:15px;font-weight:500;color:var(--tx2);}
+.range-wrap{position:relative;margin-bottom:10px;}
+.range-track{height:5px;background:rgba(0,0,0,0.07);border-radius:var(--r-p);position:relative;overflow:hidden;}
+.range-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--teal),var(--glacier));border-radius:var(--r-p);transition:width 0.08s;}
+input[type="range"]{position:absolute;inset:-12px 0;opacity:0;cursor:pointer;width:100%;height:30px;}
+.range-ticks{display:flex;justify-content:space-between;font-family:var(--f-m);font-size:9px;color:var(--tx3);margin-top:6px;}
+.opt-group{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.opt-btn{padding:16px 8px;border-radius:var(--r-md);background:var(--bg-solid);border:2px solid transparent;font-family:var(--f-b);font-size:12px;font-weight:600;color:var(--tx2);cursor:pointer;transition:all 0.2s var(--ease);text-align:center;box-shadow:var(--sh-sm);display:flex;flex-direction:column;align-items:center;gap:7px;}
+.opt-emoji{font-size:22px;}
+.opt-btn:hover{border-color:rgba(26,107,120,0.2);color:var(--tx0);}
+.opt-btn.on{border-color:var(--teal);color:var(--teal);background:rgba(26,107,120,0.04);}
+.pl-cta{width:100%;padding:18px;background:var(--tx0);color:white;border-radius:var(--r-lg);font-family:var(--f-d);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.3s var(--ease);margin-top:8px;}
+.pl-cta:hover{background:var(--teal);box-shadow:0 8px 32px rgba(26,107,120,0.32);transform:translateY(-2px);}
+
+/* ROUTE RESULT */
+#page-route{background:var(--bg);}
+.route-seq{display:flex;align-items:center;background:var(--bg-card);border-radius:var(--r-md);padding:16px 22px;box-shadow:var(--sh-sm);margin-bottom:28px;flex-wrap:wrap;gap:4px;backdrop-filter:blur(10px);}
+.seq-city{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.seq-name{font-family:var(--f-d);font-weight:800;font-size:14px;color:var(--tx0);}
+.seq-sub{font-family:var(--f-m);font-size:8px;color:var(--tx3);letter-spacing:0.07em;}
+.seq-arr{font-size:12px;color:var(--tx3);margin:0 10px;padding-bottom:10px;}
+.stats-row{display:flex;align-items:flex-start;gap:36px;flex-wrap:wrap;margin-bottom:24px;}
+.stat-col{display:flex;flex-direction:column;gap:4px;}
+.stat-big{font-family:var(--f-m);font-size:42px;font-weight:700;color:var(--tx0);letter-spacing:-2.5px;line-height:1;}
+.stat-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:var(--r-p);font-family:var(--f-m);font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;}
+.sb-g{background:rgba(74,122,90,0.12);color:var(--steppe);}
+.sb-b{background:rgba(74,158,188,0.12);color:var(--glacier-d);}
+.sb-r{background:rgba(196,96,112,0.12);color:var(--rose);}
+.stat-lbl{font-family:var(--f-b);font-size:11px;color:var(--tx3);}
+.capsule{display:inline-flex;align-items:center;gap:12px;padding:11px 20px;background:white;border-radius:var(--r-p);box-shadow:0 6px 28px rgba(0,0,0,0.11),0 0 0 1px rgba(0,0,0,0.04);animation:capsule-float 4.5s ease-in-out infinite;margin-bottom:24px;margin-left:auto;}
+.cap-dot{width:7px;height:7px;border-radius:50%;background:var(--steppe);animation:dot-blink 2s ease-in-out infinite;}
+.cap-txt{display:flex;flex-direction:column;gap:1px;}
+.cap-title{font-family:var(--f-b);font-size:12px;font-weight:700;color:var(--tx0);}
+.cap-sub{font-family:var(--f-m);font-size:9px;color:var(--tx2);}
+.cap-bars{display:flex;align-items:flex-end;gap:2px;height:18px;}
+.cap-bar{width:3px;border-radius:2px;background:var(--steppe);opacity:0.6;}
+.route-layout{display:grid;grid-template-columns:1fr 310px;gap:16px;margin-bottom:16px;}
+.grad-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.gc{border-radius:var(--r-xl);padding:26px;position:relative;overflow:hidden;min-height:220px;display:flex;flex-direction:column;justify-content:space-between;}
+.gc-flow{background:radial-gradient(ellipse at 18% 82%,rgba(90,138,106,0.92) 0%,transparent 52%),radial-gradient(ellipse at 82% 20%,rgba(26,60,38,0.88) 0%,transparent 52%),radial-gradient(ellipse at 50% 50%,rgba(14,30,18,0.75) 0%,transparent 70%),#0B1D10;}
+.gc-rhythm{background:radial-gradient(ellipse at 28% 68%,rgba(208,120,48,0.88) 0%,transparent 50%),radial-gradient(ellipse at 78% 28%,rgba(74,158,188,0.72) 0%,transparent 52%),radial-gradient(ellipse at 16% 22%,rgba(196,96,112,0.30) 0%,transparent 40%),#0F1825;}
+.gc-entry{background:radial-gradient(ellipse at 50% 35%,rgba(196,96,112,0.90) 0%,transparent 55%),radial-gradient(ellipse at 80% 80%,rgba(90,24,38,0.80) 0%,transparent 50%),#1A0810;min-height:160px;border-radius:var(--r-lg);}
+.gc-label{font-family:var(--f-m);font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.45);}
+.dot-num{font-family:var(--f-m);font-size:76px;font-weight:700;letter-spacing:-5px;line-height:1;margin:10px 0 6px;color:transparent;background-image:radial-gradient(circle,rgba(255,255,255,0.92) 42%,transparent 58%);background-size:6px 6px;-webkit-background-clip:text;background-clip:text;}
+.gc-status{font-family:var(--f-b);font-size:11px;font-weight:500;color:rgba(255,255,255,0.50);}
+.gc-text-lg{font-family:var(--f-d);font-size:32px;font-weight:800;color:rgba(255,255,255,0.92);letter-spacing:-0.025em;line-height:1.2;margin:10px 0 5px;}
+.gc-sub{font-family:var(--f-b);font-size:11px;color:rgba(255,255,255,0.45);}
+.gc-dot-grid{display:flex;flex-wrap:wrap;gap:3px;max-width:110px;opacity:0.22;}
+.gc-dot-item{width:4px;height:4px;border-radius:50%;background:white;}
+.rhythm-bars{display:flex;align-items:flex-end;gap:3px;height:28px;opacity:0.55;margin-top:8px;}
+.r-bar{flex:1;border-radius:2px;background:rgba(255,255,255,0.6);}
+.side-col{display:flex;flex-direction:column;gap:14px;}
+.pend-card{background:var(--bg-card);border-radius:var(--r-lg);padding:22px;box-shadow:var(--sh-md);backdrop-filter:blur(10px);}
+.pend-title{font-family:var(--f-b);font-size:15px;font-weight:700;color:var(--tx0);margin-bottom:4px;}
+.pend-body{font-family:var(--f-b);font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:14px;}
+.pend-range{display:flex;align-items:baseline;gap:5px;margin-bottom:10px;}
+.pend-num{font-family:var(--f-m);font-size:34px;font-weight:700;color:var(--tx0);letter-spacing:-2px;}
+.pend-num-s{font-family:var(--f-m);font-size:18px;color:var(--tx2);}
+.pend-track{height:3px;background:rgba(0,0,0,0.07);border-radius:var(--r-p);margin-bottom:8px;position:relative;}
+.pend-fill{position:absolute;left:0;top:0;bottom:0;width:38%;background:var(--glacier);border-radius:var(--r-p);}
+.pend-note{font-family:var(--f-b);font-size:11px;color:var(--tx3);line-height:1.5;}
+.see-btn{font-family:var(--f-b);font-size:12px;font-weight:600;color:var(--tx2);background:var(--bg);padding:8px 16px;border-radius:var(--r-p);transition:all 0.2s;display:block;text-align:center;width:100%;margin-top:14px;}
+.see-btn:hover{color:var(--tx0);background:rgba(0,0,0,0.06);}
+.save-card{background:var(--bg-card);border-radius:var(--r-lg);padding:22px;box-shadow:var(--sh-md);backdrop-filter:blur(10px);text-align:center;cursor:pointer;transition:all 0.2s var(--ease);}
+.save-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px);}
+.s-title{font-family:var(--f-d);font-size:20px;font-weight:700;color:var(--tx0);margin-bottom:3px;}
+.s-sub{font-family:var(--f-b);font-size:12px;color:var(--tx2);}
+.bm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.bm-card{background:var(--bg-card);border-radius:var(--r-md);padding:16px;box-shadow:var(--sh-sm);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:7px;}
+.bm-top{display:flex;align-items:center;justify-content:space-between;}
+.bm-icon{font-size:15px;}
+.bm-dot{width:6px;height:6px;border-radius:50%;}
+.bm-val{font-family:var(--f-m);font-size:26px;font-weight:700;color:var(--tx0);letter-spacing:-1.5px;line-height:1;}
+.bm-unit{font-size:11px;font-weight:400;color:var(--tx2);letter-spacing:0;}
+.bm-lbl{font-family:var(--f-b);font-size:11px;color:var(--tx2);font-weight:500;}
+.bm-chart{display:flex;align-items:flex-end;gap:2px;height:22px;margin-top:2px;}
+.bm-bar{flex:1;border-radius:2px;min-height:2px;}
+.t-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+.t-card{background:var(--bg-card);border-radius:var(--r-lg);padding:20px;box-shadow:var(--sh-sm);position:relative;backdrop-filter:blur(10px);}
+.t-badge{position:absolute;top:16px;right:16px;padding:4px 10px;border-radius:var(--r-p);font-family:var(--f-m);font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;}
+.tb-g{background:rgba(74,122,90,0.12);color:var(--steppe);}
+.tb-a{background:rgba(208,120,48,0.12);color:var(--amber);}
+.tb-r{background:rgba(196,96,112,0.12);color:var(--rose);}
+.t-type{font-family:var(--f-d);font-size:15px;font-weight:700;color:var(--tx0);margin-bottom:14px;padding-right:100px;}
+.t-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.t-s-lbl{font-family:var(--f-m);font-size:9px;color:var(--tx3);letter-spacing:0.09em;text-transform:uppercase;margin-bottom:2px;}
+.t-s-val{font-family:var(--f-b);font-size:13px;font-weight:600;color:var(--tx0);}
+.t-note{font-family:var(--f-b);font-size:11px;color:var(--tx2);line-height:1.55;padding-top:12px;border-top:1px solid rgba(0,0,0,0.05);margin-bottom:12px;}
+.t-vrow{display:flex;align-items:center;gap:6px;}
+.t-vdot{width:5px;height:5px;border-radius:50%;}
+.t-vtxt{font-family:var(--f-m);font-size:9px;color:var(--tx3);letter-spacing:0.07em;}
+
+/* DASHBOARD */
+#page-dashboard{background:var(--bg);}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.dash-card{background:var(--bg-card);border-radius:var(--r-lg);padding:24px;box-shadow:var(--sh-md);backdrop-filter:blur(10px);}
+.dash-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.dash-hd-t{font-family:var(--f-m);font-size:9px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--tx3);}
+.dash-act{font-family:var(--f-b);font-size:11px;font-weight:600;color:var(--teal);cursor:pointer;}
+.ex-iw{background:var(--bg);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:14px;}
+.ex-lbl{font-family:var(--f-m);font-size:9px;color:var(--tx3);letter-spacing:0.10em;margin-bottom:4px;}
+.ex-inp{font-family:var(--f-d);font-size:28px;font-weight:900;color:var(--tx0);letter-spacing:-1px;background:none;border:none;width:100%;outline:none;}
+.ex-rates{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ex-ri{background:var(--bg);border-radius:var(--r-xs);padding:11px;}
+.ex-cur{font-family:var(--f-m);font-size:8px;font-weight:700;color:var(--tx3);letter-spacing:0.10em;margin-bottom:4px;}
+.ex-val{font-family:var(--f-d);font-size:17px;font-weight:800;color:var(--tx0);letter-spacing:-0.5px;}
+.ex-foot{font-family:var(--f-m);font-size:8px;color:var(--tx3);margin-top:12px;line-height:1.4;}
+.check-list{display:flex;flex-direction:column;gap:12px;}
+.check-row{display:flex;align-items:flex-start;gap:12px;cursor:pointer;}
+.check-box{width:18px;height:18px;border-radius:5px;flex-shrink:0;border:2px solid rgba(0,0,0,0.12);margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease);}
+.check-box.on{background:var(--steppe);border-color:var(--steppe);}
+.check-box.on::after{content:'✓';color:white;font-size:10px;font-weight:800;}
+.check-txt{flex:1;}
+.check-title{font-family:var(--f-b);font-size:13px;font-weight:600;color:var(--tx0);margin-bottom:1px;}
+.check-sub{font-family:var(--f-m);font-size:9px;color:var(--tx3);}
+.check-row.done .check-title{text-decoration:line-through;color:var(--tx3);}
+.tip-item{background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;}
+.tip-lang{font-family:var(--f-m);font-size:9px;color:var(--tx3);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:6px;}
+.tip-ph{font-family:var(--f-d);font-size:16px;font-weight:700;color:var(--tx0);margin-bottom:3px;}
+.tip-mean{font-family:var(--f-b);font-size:11px;color:var(--tx2);}
+.tip-hi{background:rgba(26,107,120,0.06);border:1px solid rgba(26,107,120,0.10);}
+
+#left-panel .route-layout {
+  grid-template-columns: 1fr !important;
+}
+#left-panel .dash-grid {
+  grid-template-columns: 1fr !important;
+}
+#left-panel .bm-grid {
+  grid-template-columns: 1fr 1fr !important;
+}
+#left-panel .grad-cards {
+  grid-template-columns: 1fr !important;
+}
+#left-panel .wrap, #left-panel .wrap-n {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 30px 20px 80px;
+  box-sizing: border-box;
+}
+
+#app-container {
+  display: none;
+  height: 100vh;
+  width: 100vw;
+  grid-template-columns: 480px 1fr;
+}
+#left-panel {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#right-map-panel {
+  position: relative;
+  height: 100%;
+  border-left: 1px solid rgba(0,0,0,0.06);
+}
+#page-landing {
+  position: fixed;
+  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+}
+.map-ctrl-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 250px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-md);
+  padding: 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.map-ctrl-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-ctrl-lbl {
+  font-family: var(--f-m);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--tx2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.map-layer-btns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: rgba(0,0,0,0.05);
+  border-radius: var(--r-xs);
+  padding: 2px;
+}
+.map-layer-btn {
+  font-family: var(--f-b);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx2);
+  padding: 6px 2px;
+  text-align: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.map-layer-btn.on {
+  background: white;
+  color: var(--tx0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.map-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tx1);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.map-toggle-cb {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.map-toggle-cb.on {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+.map-toggle-cb.on::after {
+  content: '✓';
+  color: white;
+  font-size: 9px;
+  font-weight: 900;
+}
+.pulse-marker {
+  width: 14px;
+  height: 14px;
+  background: var(--amber);
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(208,120,48,0.4);
+  animation: marker-pulse 1.5s infinite;
+}
+@keyframes marker-pulse {
+  0% { box-shadow: 0 0 0 0px rgba(208,120,48,0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(208,120,48,0); }
+  100% { box-shadow: 0 0 0 0px rgba(208,120,48,0); }
+}
+.camp-marker {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1.5px solid var(--steppe);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  box-shadow: var(--sh-sm);
+  transition: transform 0.2s;
+}
+.camp-marker:hover {
+  transform: scale(1.15);
+}
+.city-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--teal);
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.map-city-lbl {
+  background: rgba(255,255,255,0.9) !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: var(--sh-sm) !important;
+  font-family: var(--f-b) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--tx0) !important;
+  border-radius: 4px !important;
+}
+.store-card{display:flex;flex-direction:column;background:var(--bg-card);border-radius:var(--r-md);border:1px solid rgba(0,0,0,0.03);overflow:hidden;}
+.comment-item{display:flex;gap:10px;background:var(--bg);padding:8px 12px;border-radius:8px;align-items:flex-start;}
+.comment-avatar{width:24px;height:24px;border-radius:50%;background:var(--teal);color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+
+
+.map-overlay-status {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: rgba(8, 13, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: var(--r-p);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.mos-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--steppe-l);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--steppe-l);
+  animation: dot-pulse 1.5s infinite;
+}
+.mos-lbl {
+  font-family: var(--f-m);
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+.map-overlay-coords {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: rgba(8, 13, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  display: flex;
+  gap: 16px;
+  pointer-events: none;
+  font-family: var(--f-m);
+}
+.moc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.moc-lbl {
+  font-size: 7px;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.moc-val {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+}
+
+@media(max-width:900px){
+  #app-container { grid-template-columns: 1fr; }
+  #right-map-panel { display: none; }
+  .route-layout{grid-template-columns: 1fr;}
+  .bm-grid{grid-template-columns: 1fr 1fr;}
+}
+@media(max-width:700px){.grad-cards{grid-template-columns:1fr;}.dash-grid{grid-template-columns:1fr;}.l-foot{display:none;}.l-top{left:24px;right:24px;}.stats-row{gap:22px;}.stat-big{font-size:30px;}.nav-seg{display:none;}}
+@media(max-width:480px){.wrap{padding:28px 16px 80px;}.bm-grid{grid-template-columns:1fr 1fr;}.t-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="page-landing" class="page active">
+  <div class="l-bg">
+    <div class="l-orb l-o1"></div><div class="l-orb l-o2"></div><div class="l-orb l-o3"></div>
+    <div class="l-grid"></div><div id="l-dots"></div>
+  </div>
+  <div class="l-top">
+    <span class="l-top-lbl">Nomadism // Central Asia Travel OS</span>
+    <div class="l-lang-row">
+      <button class="l-lang-btn on" onclick="setLang('ko',this)">KOR</button>
+      <div class="l-lang-sep"></div>
+      <button class="l-lang-btn" onclick="setLang('en',this)">ENG</button>
+      <div class="l-lang-sep"></div>
+      <button class="l-lang-btn" onclick="setLang('ru',this)">RUS</button>
+    </div>
+  </div>
+  <div class="l-content">
+    <div class="l-eyebrow">Kazakhstan · Kyrgyzstan · Uzbekistan</div>
+    <h1 class="l-logo">NOM<span class="l-logo-g">AD</span>ISM</h1>
+    <p class="l-tagline">Where will the road take you?</p>
+    <button class="l-cta" onclick="goPage('planner')">
+      중앙아시아 여행 설계하기
+      <div class="l-cta-arr">→</div>
+    </button>
+  </div>
+  <div class="l-foot"><span>ANCIENT ROUTES, MODERN COMPASS</span><span>KAZ · KGZ · UZB · 2026</span></div>
+</div>
+
+<div id="app-container">
+  <div id="left-panel">
+    
+    <!-- PLANNER -->
+    <div id="page-planner" class="page">
+      <nav class="app-nav">
+        <button class="nav-brand" onclick="goPage('landing')">NOMADISM</button>
+        <div class="nav-seg">
+          <button class="nav-seg-btn on" onclick="goPage('planner')">여정 설계</button>
+          <button class="nav-seg-btn" onclick="goPage('route')">루트 결과</button>
+          <button class="nav-seg-btn" onclick="goPage('dashboard')">내 여행</button>
+          <button class="nav-seg-btn" onclick="goPage('store')">로컬 스토어</button>
+          <button class="nav-seg-btn" onclick="goPage('community')">커뮤니티</button>
+        </div>
+        <div class="nav-lang-row"><button class="nav-lang-btn on">KOR</button><div class="nav-lang-sep"></div><button class="nav-lang-btn">ENG</button></div>
+      </nav>
+      <div class="wrap">
+        <div class="fu" style="margin-bottom:30px;">
+          <div class="eyebrow">Step 1 · 조건 설정</div>
+          <h2 class="pl-title" style="font-size:32px;">당신의<br>여정을<br>알려주세요</h2>
+        </div>
+        
+        <div class="pl-card fu fu1">
+          <div class="field-label">1. 출발 도시 (IN)</div>
+          <div class="city-pills" id="planner-start-city">
+            <button class="city-pill on" onclick="pickPlannerStart(this, '알마티')">🇰🇿 알마티 (ALA)</button>
+            <button class="city-pill" onclick="pickPlannerStart(this, '비슈케크')">🇰🇬 비슈케크 (FRU)</button>
+            <button class="city-pill" onclick="pickPlannerStart(this, '타슈켄트')">🇺🇿 타슈켄트 (TAS)</button>
+          </div>
+        </div>
+        
+        <div class="pl-card fu fu2">
+          <div class="field-label">2. 최종 목적지 (OUT)</div>
+          <div class="city-pills" id="planner-end-city">
+            <button class="city-pill" onclick="pickPlannerEnd(this, '알마티')">🇰🇿 알마티 (ALA)</button>
+            <button class="city-pill on" onclick="pickPlannerEnd(this, '비슈케크')">🇰🇬 비슈케크 (FRU)</button>
+            <button class="city-pill" onclick="pickPlannerEnd(this, '타슈켄트')">🇺🇿 타슈켄트 (TAS)</button>
+          </div>
+        </div>
+
+        <div class="pl-card fu fu3">
+          <div class="field-label">3. 경유 희망지 (선택)</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx1);cursor:pointer;font-weight:600;">
+              <input type="checkbox" id="wp-karakol" checked style="accent-color:var(--teal);width:16px;height:16px;">
+              <span>⛺ 카라콜 &amp; 온천지 경유 (Karakol)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx1);cursor:pointer;font-weight:600;">
+              <input type="checkbox" id="wp-cholpon" checked style="accent-color:var(--teal);width:16px;height:16px;">
+              <span>🌊 촐폰아타 호수 휴양 경유 (Cholpon-Ata)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--tx1);cursor:pointer;font-weight:600;">
+              <input type="checkbox" id="wp-charyn" checked style="accent-color:var(--teal);width:16px;height:16px;">
+              <span>🏜️ 차린 캐년 협곡 경유 (Charyn Canyon)</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="pl-card fu fu4">
+          <div class="field-label">4. 체류 기간</div>
+          <div class="dur-display"><div class="dur-num" id="dur-num">15</div><div class="dur-unit">일</div></div>
+          <div class="range-wrap">
+            <div class="range-track"><div class="range-fill" id="range-fill" style="width:62%;"></div></div>
+            <input type="range" id="dur-range" min="5" max="21" value="15" oninput="setDur(this.value)">
+          </div>
+          <div class="range-ticks"><span>5일</span><span>7일</span><span>10일</span><span>15일</span><span>21일</span></div>
+        </div>
+        
+        <div class="pl-card fu fu5">
+          <div class="field-label">5. 여행 스타일</div>
+          <div class="city-pills" id="planner-style">
+            <button class="city-pill on" onclick="pickPlannerStyle(this, '밸런스')">⚖️ 밸런스 (골고루 즐기기)</button>
+            <button class="city-pill" onclick="pickPlannerStyle(this, '자연')">🏔️ 자연 탐험</button>
+            <button class="city-pill" onclick="pickPlannerStyle(this, '문화')">🏛️ 역사/문화</button>
+            <button class="city-pill" onclick="pickPlannerStyle(this, '휴양')">🌴 힐링 휴양</button>
+          </div>
+        </div>
+        
+        <button class="pl-cta fu fu6" style="background:#141414;color:white;border:none;border-radius:12px;font-weight:700;" onclick="generateSchedule()">초정밀 일정 생성</button>
+      </div>
+    </div>
+
+    <!-- ROUTE RESULT -->
+    <div id="page-route" class="page">
+      <nav class="app-nav">
+        <button class="nav-brand" onclick="goPage('landing')">NOMADISM</button>
+        <div class="nav-seg">
+          <button class="nav-seg-btn" onclick="goPage('planner')">여정 설계</button>
+          <button class="nav-seg-btn on" onclick="goPage('route')">루트 결과</button>
+          <button class="nav-seg-btn" onclick="goPage('dashboard')">내 여행</button>
+          <button class="nav-seg-btn" onclick="goPage('store')">로컬 스토어</button>
+          <button class="nav-seg-btn" onclick="goPage('community')">커뮤니티</button>
+        </div>
+        <div class="nav-lang-row"><button class="nav-lang-btn on">KOR</button><div class="nav-lang-sep"></div><button class="nav-lang-btn">ENG</button></div>
+      </nav>
+      <div class="wrap">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px;" class="fu">
+          <div>
+            <div class="eyebrow" id="route-header-tag">YOUR ROUTE · 15 DAYS · 밸런스</div>
+            <h2 style="font-family:var(--f-d);font-size:26px;font-weight:900;letter-spacing:-0.03em;line-height:1.2;color:var(--tx0);margin-top:6px;">데이터 기반 스케줄 리포트</h2>
+            <p style="font-family:var(--f-b);font-size:11px;color:var(--steppe);margin-top:6px;font-weight:700;">● SUCCESSFULLY GENERATED</p>
+          </div>
+          <button class="see-btn" style="margin-top:0;width:auto;padding:10px 20px;" onclick="goPage('planner')">돌아가기 ✕</button>
+        </div>
+        
+        <!-- Timeline vertical checklist -->
+        <div class="timeline-container fu fu1" id="timeline-schedule" style="display:flex;flex-direction:column;gap:16px;position:relative;padding-left:14px;">
+          <!-- A vertical indicator line connecting the items -->
+          <div style="position:absolute;left:27px;top:20px;bottom:20px;width:2px;background:rgba(0,0,0,0.06);z-index:1;"></div>
+          
+          <!-- Dynamic itinerary items generated by script -->
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page">
+      <nav class="app-nav">
+        <button class="nav-brand" onclick="goPage('landing')">NOMADISM</button>
+        <div class="nav-seg">
+          <button class="nav-seg-btn" onclick="goPage('planner')">여정 설계</button>
+          <button class="nav-seg-btn" onclick="goPage('route')">루트 결과</button>
+          <button class="nav-seg-btn on" onclick="goPage('dashboard')">내 여행</button>
+          <button class="nav-seg-btn" onclick="goPage('store')">로컬 스토어</button>
+          <button class="nav-seg-btn" onclick="goPage('community')">커뮤니티</button>
+        </div>
+        <div class="nav-lang-row"><button class="nav-lang-btn on">KOR</button><div class="nav-lang-sep"></div><button class="nav-lang-btn">ENG</button></div>
+      </nav>
+      <div class="wrap">
+        <div class="fu" style="margin-bottom:32px;"><div class="eyebrow">내 여행 보관함</div><h2 style="font-family:var(--f-d);font-size:clamp(30px,4.5vw,48px);font-weight:900;letter-spacing:-0.035em;line-height:1.05;color:var(--tx0);">여행<br><span style="color:var(--teal);">상태판</span></h2></div>
+        <div class="dash-grid fu fu1">
+          
+          <!-- Currency -->
+          <div class="dash-card">
+            <div class="dash-hd"><div class="dash-hd-t">실시간 환율</div><span class="dash-act" onclick="convertCurrency(document.getElementById('krw-in').value)">새로고침</span></div>
+            <div class="ex-iw"><div class="ex-lbl">KRW 입력</div><input type="number" id="krw-in" class="ex-inp" value="100000" oninput="convertCurrency(this.value)"></div>
+            <div class="ex-rates">
+              <div class="ex-ri"><div class="ex-cur">🇺🇿 UZS</div><div class="ex-val" id="r-uzs">913,040</div></div>
+              <div class="ex-ri"><div class="ex-cur">🇰🇿 KZT</div><div class="ex-val" id="r-kzt">34,720</div></div>
+              <div class="ex-ri"><div class="ex-cur">🇰🇬 KGS</div><div class="ex-val" id="r-kgs">6,240</div></div>
+              <div class="ex-ri"><div class="ex-cur">🇺🇸 USD</div><div class="ex-val" id="r-usd">72.00</div></div>
+            </div>
+            <div class="ex-foot">※ 기준: 2026-07 · 고시 환율 반영</div>
+          </div>
+
+          <!-- Dutch Pay Ledger -->
+          <div class="dash-card">
+            <div class="dash-hd"><div class="dash-hd-t">공동 경비 정산</div><span class="dash-act" onclick="clearExpenses()">정산 초기화</span></div>
+            
+            <div style="background:var(--bg);padding:12px;border-radius:var(--r-sm);margin-bottom:12px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:6px;">
+                <input type="text" id="exp-item" placeholder="지출 항목 (예: 택시비)" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:6px;font-size:11px;outline:none;">
+                <select id="exp-payer" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px;border-radius:6px;font-size:11px;outline:none;font-weight:600;">
+                  <option value="민우">결제자: 민우</option>
+                  <option value="지선">결제자: 지선</option>
+                  <option value="현우">결제자: 현우</option>
+                </select>
+              </div>
+              <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:6px;">
+                <input type="number" id="exp-amount" placeholder="금액 입력" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:6px;font-size:11px;outline:none;">
+                <select id="exp-cur" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px;border-radius:6px;font-size:11px;outline:none;font-weight:600;">
+                  <option value="KZT">🇰🇿 KZT (텡게)</option>
+                  <option value="KGS">🇰🇬 KGS (솜)</option>
+                  <option value="UZS">🇺🇿 UZS (숨)</option>
+                  <option value="KRW">🇰🇷 KRW (원)</option>
+                </select>
+              </div>
+              <button onclick="addExpense()" style="background:var(--teal);color:white;padding:8px;border-radius:6px;font-size:11px;font-weight:700;text-align:center;">지출 등록하기</button>
+            </div>
+            
+            <div id="expense-list-container" style="max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px;border-bottom:1px solid rgba(0,0,0,0.05);padding-bottom:10px;">
+              <!-- entries -->
+            </div>
+
+            <div style="background:rgba(26,107,120,0.05);border:1px dashed rgba(26,107,120,0.15);padding:12px;border-radius:var(--r-sm);">
+              <div style="font-family:var(--f-m);font-size:8px;font-weight:700;color:var(--teal);letter-spacing:0.10em;margin-bottom:6px;">최종 정산 정산서</div>
+              <div id="dutch-result" style="font-family:var(--f-b);font-size:11px;color:var(--tx0);line-height:1.65;display:flex;flex-direction:column;gap:4px;">
+                등록된 경비가 없습니다.
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Checkpoint alerts -->
+          <div class="dash-card">
+            <div class="dash-hd"><div class="dash-hd-t">국경 & 실시간 알림</div><span class="dash-act">새로고침</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="background:var(--bg);padding:10px 12px;border-radius:var(--r-sm);border-left:3px solid var(--steppe);">
+                <div style="display:flex;align-items:center;margin-bottom:4px;">
+                  <span style="font-family:var(--f-b);font-size:11px;font-weight:700;color:var(--tx0);">🛂 코르다이 심사소 (Ak-Zhol)</span>
+                  <span style="font-family:var(--f-m);font-size:8px;color:var(--tx3);margin-left:auto;">12분 전</span>
+                </div>
+                <p style="font-family:var(--f-b);font-size:11px;color:var(--tx2);line-height:1.4;">차량 대기 시간 약 40분. 원활한 소통 상태.</p>
+              </div>
+              
+              <div style="background:var(--bg);padding:10px 12px;border-radius:var(--r-sm);border-left:3px solid var(--rose);">
+                <div style="display:flex;align-items:center;margin-bottom:4px;">
+                  <span style="font-family:var(--f-b);font-size:11px;font-weight:700;color:var(--tx0);">⚠️ 케겐 / 카르키라 국경로</span>
+                  <span style="font-family:var(--f-m);font-size:8px;color:var(--tx3);margin-left:auto;">2시간 전</span>
+                </div>
+                <p style="font-family:var(--f-b);font-size:11px;color:var(--tx2);line-height:1.4;">비포장구간 먼지 심함. 대중교통 없음. 차량 섭외 필수.</p>
+              </div>
+
+              <div style="background:var(--bg);padding:10px 12px;border-radius:var(--r-sm);border-left:3px solid var(--amber);">
+                <div style="display:flex;align-items:center;margin-bottom:4px;">
+                  <span style="font-family:var(--f-b);font-size:11px;font-weight:700;color:var(--tx0);">🛂 지벡 졸리 심사소 (KZ-UZ)</span>
+                  <span style="font-family:var(--f-m);font-size:8px;color:var(--tx3);margin-left:auto;">4시간 전</span>
+                </div>
+                <p style="font-family:var(--f-b);font-size:11px;color:var(--tx2);line-height:1.4;">상업 트럭 대기 차량 다수. 승용차 대기 시간 약 1.5시간.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Language card tips -->
+          <div class="dash-card">
+            <div class="dash-hd"><div class="dash-hd-t">현지 생존 카드</div><span class="dash-act">더 보기</span></div>
+            <div class="tip-item"><div class="tip-lang">🇷🇺 러시아어</div><div class="tip-ph">Сколько стоит?</div><div class="tip-mean">스꼴까 스또잇? — 얼마예요?</div></div>
+            <div class="tip-item"><div class="tip-lang">🇷🇺 러시아어</div><div class="tip-ph">Где туалет?</div><div class="tip-mean">그제 뚜알렛? — 화장실 어디예요?</div></div>
+            <div class="tip-item"><div class="tip-lang">🇺🇿 우즈베크어</div><div class="tip-ph">Rahmat</div><div class="tip-mean">라흐맛 — 감사합니다</div></div>
+            <div class="tip-item"><div class="tip-lang">🇰🇬 키르기스어</div><div class="tip-ph">Рахмат</div><div class="tip-mean">라흐맛 — 감사합니다</div></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    
+    <!-- LOCAL STORE -->
+    <div id="page-store" class="page">
+      <nav class="app-nav">
+        <button class="nav-brand" onclick="goPage('landing')">NOMADISM</button>
+        <div class="nav-seg">
+          <button class="nav-seg-btn" onclick="goPage('planner')">여정 설계</button>
+          <button class="nav-seg-btn" onclick="goPage('route')">루트 결과</button>
+          <button class="nav-seg-btn" onclick="goPage('dashboard')">내 여행</button>
+          <button class="nav-seg-btn on" onclick="goPage('store')">로컬 스토어</button>
+          <button class="nav-seg-btn" onclick="goPage('community')">커뮤니티</button>
+        </div>
+        <div class="nav-lang-row"><button class="nav-lang-btn on">KOR</button><div class="nav-lang-sep"></div><button class="nav-lang-btn">ENG</button></div>
+      </nav>
+      <div class="wrap">
+        <div class="fu" style="margin-bottom:32px;">
+          <div class="eyebrow">NOMADISM STORE</div>
+          <h2 style="font-family:var(--f-d);font-size:32px;font-weight:900;letter-spacing:-0.035em;line-height:1.05;color:var(--tx0);">로컬 스토어<br><span style="color:var(--teal);">인프라 예약</span></h2>
+        </div>
+        
+        <div style="display:flex;flex-direction:column;gap:20px;" class="fu fu1" id="store-cards-container">
+          <!-- Dynamic store cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TRAVELER COMMUNITY -->
+    <div id="page-community" class="page">
+      <nav class="app-nav">
+        <button class="nav-brand" onclick="goPage('landing')">NOMADISM</button>
+        <div class="nav-seg">
+          <button class="nav-seg-btn" onclick="goPage('planner')">여정 설계</button>
+          <button class="nav-seg-btn" onclick="goPage('route')">루트 결과</button>
+          <button class="nav-seg-btn" onclick="goPage('dashboard')">내 여행</button>
+          <button class="nav-seg-btn" onclick="goPage('store')">로컬 스토어</button>
+          <button class="nav-seg-btn on" onclick="goPage('community')">커뮤니티</button>
+        </div>
+        <div class="nav-lang-row"><button class="nav-lang-btn on">KOR</button><div class="nav-lang-sep"></div><button class="nav-lang-btn">ENG</button></div>
+      </nav>
+      <div class="wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;" class="fu">
+          <div>
+            <div class="eyebrow">TRAVELER COMMUNITY</div>
+            <h2 style="font-family:var(--f-d);font-size:32px;font-weight:900;letter-spacing:-0.035em;line-height:1.05;color:var(--tx0);">여행자 광장</h2>
+          </div>
+          <button onclick="toggleWriteForm()" style="background:var(--tx0);color:white;padding:8px 16px;border-radius:8px;font-size:11px;font-weight:700;border:none;">새 글 작성</button>
+        </div>
+        
+        <!-- Post Write Form (toggleable) -->
+        <div id="comm-write-form" style="display:none;background:var(--bg-card);border:1px solid rgba(0,0,0,0.03);border-radius:var(--r-md);padding:18px;margin-bottom:20px;flex-direction:column;gap:10px;">
+          <h3 style="font-family:var(--f-d);font-size:16px;font-weight:900;color:var(--tx0);">게시물 작성</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <input type="text" id="comm-author" placeholder="작성자 닉네임" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:6px;font-size:11px;outline:none;">
+            <input type="password" id="comm-pw" placeholder="비밀번호" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:6px;font-size:11px;outline:none;">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+            <select id="comm-type" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px;border-radius:6px;font-size:11px;outline:none;font-weight:600;">
+              <option value="정보">정보</option>
+              <option value="질문">질문</option>
+              <option value="동행">동행</option>
+              <option value="경고">경고</option>
+              <option value="일반">일반</option>
+            </select>
+            <input type="text" id="comm-title" placeholder="글 제목 입력" style="background:white;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:6px;font-size:11px;outline:none;">
+          </div>
+          <textarea id="comm-body" placeholder="내용을 작성해주세요..." style="background:white;border:1px solid rgba(0,0,0,0.06);padding:10px;border-radius:6px;font-size:11px;outline:none;resize:none;height:100px;font-family:inherit;"></textarea>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button onclick="toggleWriteForm()" style="background:#ddd;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;">취소</button>
+            <button onclick="submitPost()" style="background:var(--teal);color:white;padding:6px 16px;border-radius:6px;font-size:11px;font-weight:700;border:none;">등록</button>
+          </div>
+        </div>
+        
+        <!-- Posts Feed -->
+        <div id="comm-feed-container" style="display:flex;flex-direction:column;gap:12px;" class="fu fu1">
+          <!-- Dynamic posts list -->
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT OVERLAY -->
+    <div id="payment-overlay" style="display:none;position:absolute;inset:0;background:rgba(237,234,228,0.95);backdrop-filter:blur(20px);z-index:300;flex-direction:column;overflow-y:auto;padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(0,0,0,0.05);padding-bottom:10px;">
+        <h3 style="font-family:var(--f-d);font-size:20px;font-weight:900;color:var(--tx0);">결제하기</h3>
+        <button onclick="closePayment()" style="font-size:18px;color:var(--tx2);font-weight:700;background:none;border:none;cursor:pointer;">✕</button>
+      </div>
+      
+      <div class="pl-card" style="padding:16px;margin-bottom:16px;border:1px solid rgba(0,0,0,0.03);background:var(--bg-card);border-radius:var(--r-md);">
+        <div style="font-size:9px;color:var(--teal);font-weight:700;margin-bottom:4px;font-family:var(--f-m);">선택된 상품</div>
+        <div id="pay-title" style="font-size:14px;font-weight:800;color:var(--tx0);margin-bottom:4px;">아라아르차 국립공원 입장 허가서</div>
+        <div style="font-size:18px;font-weight:900;color:var(--tx0);"><span id="pay-price">2,500</span> <span id="pay-cur" style="font-size:11px;font-weight:400;color:var(--tx2);">KGS</span></div>
+      </div>
+      
+      <!-- Input fields -->
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+        <div>
+          <div style="font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:600;">예약자 이름</div>
+          <input type="text" id="pay-name" style="width:100%;background:white;border:1px solid rgba(0,0,0,0.06);padding:10px;border-radius:6px;font-size:12px;outline:none;" placeholder="홍길동">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--tx2);margin-bottom:4px;font-weight:600;">이메일 주소</div>
+          <input type="email" id="pay-email" style="width:100%;background:white;border:1px solid rgba(0,0,0,0.06);padding:10px;border-radius:6px;font-size:12px;outline:none;" placeholder="name@email.com">
+        </div>
+      </div>
+      
+      <!-- Pay tabs -->
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;font-weight:600;">결제 수단</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px;">
+        <button onclick="selectPayTab('kakao')" id="pay-tab-kakao" class="pay-method-tab-btn" style="background:#FEE500;padding:8px 4px;border-radius:8px;font-size:10px;font-weight:800;color:#3A1D1D;border:2px solid transparent;cursor:pointer;">Kakao</button>
+        <button onclick="selectPayTab('naver')" id="pay-tab-naver" class="pay-method-tab-btn" style="background:#03C75A;padding:8px 4px;border-radius:8px;font-size:10px;font-weight:800;color:white;border:2px solid transparent;cursor:pointer;">Naver</button>
+        <button onclick="selectPayTab('toss')" id="pay-tab-toss" class="pay-method-tab-btn" style="background:#0064FF;padding:8px 4px;border-radius:8px;font-size:10px;font-weight:800;color:white;border:2px solid transparent;cursor:pointer;">Toss</button>
+        <button onclick="selectPayTab('paypal')" id="pay-tab-paypal" class="pay-method-tab-btn" style="background:white;border:1px solid #ddd;padding:8px 4px;border-radius:8px;font-size:10px;font-weight:800;color:#003087;border:2px solid transparent;cursor:pointer;">PayPal</button>
+      </div>
+      
+      <!-- QR Panel -->
+      <div id="qr-panel" style="background:white;border:1px solid rgba(0,0,0,0.05);border-radius:12px;padding:20px;text-align:center;margin-bottom:20px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div id="qr-title" style="font-size:11px;font-weight:700;color:var(--tx0);">카카오페이 QR 결제스캔</div>
+        <img id="qr-image" src="" style="width:120px;height:120px;display:block;border:1px solid #eee;padding:4px;border-radius:6px;">
+        <p style="font-size:10px;color:var(--tx2);line-height:1.4;">QR 코드를 스캔하여 결제를 완료하세요.</p>
+      </div>
+      
+      <button onclick="submitPayment()" style="width:100%;background:var(--teal);color:white;padding:12px;border-radius:8px;font-size:13px;font-weight:700;text-align:center;border:none;cursor:pointer;">결제 확인 &amp; 발권</button>
+    </div>
+  </div><!-- /left-panel -->
+
+  <!-- Right Map Panel -->
+  <div id="right-map-panel">
+    <div id="map" style="width: 100%; height: 100%;"></div>
+    
+    <!-- Tactile Overlays -->
+    <div class="map-overlay-status">
+      <span class="mos-dot"></span>
+      <span class="mos-lbl">TACTICAL COMPASS // ACTIVE</span>
+    </div>
+    
+    <div class="map-overlay-coords">
+      <div class="moc-item"><span class="moc-lbl">LAT</span><span class="moc-val" id="map-lat">42.0000° N</span></div>
+      <div class="moc-item"><span class="moc-lbl">LNG</span><span class="moc-val" id="map-lng">71.0000° E</span></div>
+      <div class="moc-item"><span class="moc-lbl">ALT</span><span class="moc-val" id="map-alt">3,016m</span></div>
+    </div>
+    
+    <!-- Floating controls -->
+    <div class="map-ctrl-panel">
+      <div class="map-ctrl-sec">
+        <div class="map-ctrl-lbl">MAP VIEW</div>
+        <div class="map-layer-btns">
+          <button class="map-layer-btn on" onclick="setMapLayer('std')">Standard</button>
+          <button class="map-layer-btn" onclick="setMapLayer('sat')">Satellite</button>
+          <button class="map-layer-btn" onclick="setMapLayer('topo')">Terrain</button>
+        </div>
+      </div>
+      
+      <div class="map-ctrl-sec">
+        <div class="map-ctrl-lbl">OVERLAND LAYERS</div>
+        <div class="map-toggle-row" onclick="toggleOverlay('camp')">
+          <div class="map-toggle-cb on" id="cb-camp"></div>
+          <span>⛺ 야영/비박지 (Wild Camping)</span>
+        </div>
+        <div class="map-toggle-row" onclick="toggleOverlay('checkpoint')">
+          <div class="map-toggle-cb on" id="cb-checkpoint"></div>
+          <span>🛂 국경 심사소 (Border Checkpoints)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let cur='landing';
+function goPage(id){
+  if(id===cur)return;
+  const prev=document.getElementById('page-'+cur);
+  const next=document.getElementById('page-'+id);
+  if(!prev||!next)return;
+
+  if (cur === 'landing') {
+    document.getElementById('app-container').style.display = 'grid';
+    if (map) {
+      setTimeout(() => { map.invalidateSize(); }, 50);
+    }
+  }
+
+  prev.classList.add('leaving');
+  setTimeout(()=>{
+    prev.classList.remove('active','leaving');
+    if (id === 'landing') {
+      document.getElementById('app-container').style.display = 'none';
+    }
+    next.classList.add('active');
+    next.scrollTop=0;cur=id;
+    syncNav(id);
+    next.querySelectorAll('[class*="fu"]').forEach(el=>{el.style.animation='none';void el.offsetWidth;el.style.animation='';});
+
+    if (id === 'route') {
+      triggerRouteZoom();
+    } else if (id === 'planner') {
+      resetToDefaultMap();
+    }
+  },260);
+}
+function syncNav(id){
+  const mapVal={planner:0,route:1,dashboard:2};
+  document.querySelectorAll('.nav-seg').forEach(seg=>{
+    seg.querySelectorAll('.nav-seg-btn').forEach((b,i)=>b.classList.toggle('on',i===mapVal[id]));
+  });
+}
+function initLandingDots(){
+  const c=document.getElementById('l-dots');
+  for(let i=0;i<45;i++){
+    const d=document.createElement('div');
+    Object.assign(d.style,{position:'absolute',width:'2px',height:'2px',borderRadius:'50%',background:'rgba(255,255,255,0.28)',left:Math.random()*100+'%',top:Math.random()*100+'%',animation:`dot-pulse ${2+Math.random()*3}s ease-in-out infinite`,animationDelay:(Math.random()*4)+'s'});
+    c.appendChild(d);
+  }
+  const cities=[{n:'Almaty',x:72,y:36},{n:'Bishkek',x:65,y:43},{n:'Tashkent',x:57,y:55},{n:'Samarkand',x:51,y:62},{n:'Bukhara',x:44,y:66}];
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  Object.assign(svg.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});
+  for(let i=0;i<cities.length-1;i++){
+    const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1',cities[i].x+'%');ln.setAttribute('y1',cities[i].y+'%');
+    ln.setAttribute('x2',cities[i+1].x+'%');ln.setAttribute('y2',cities[i+1].y+'%');
+    ln.setAttribute('stroke','rgba(255,255,255,0.07)');ln.setAttribute('stroke-width','1');ln.setAttribute('stroke-dasharray','4 6');
+    svg.appendChild(ln);
+  }
+  c.appendChild(svg);
+  cities.forEach((ct,i)=>{
+    const dot=document.createElement('div');
+    Object.assign(dot.style,{position:'absolute',width:'7px',height:'7px',borderRadius:'50%',background:'rgba(255,255,255,0.65)',left:ct.x+'%',top:ct.y+'%',transform:'translate(-50%,-50%)',boxShadow:'0 0 10px rgba(255,255,255,0.35)',animation:`dot-pulse ${2.5+i*0.4}s ease-in-out infinite`,animationDelay:(i*0.35)+'s'});
+    c.appendChild(dot);
+    const lbl=document.createElement('div');
+    Object.assign(lbl.style,{position:'absolute',left:(ct.x+1.2)+'%',top:(ct.y-2.5)+'%',fontFamily:"'JetBrains Mono',monospace",fontSize:'9px',color:'rgba(255,255,255,0.28)',letterSpacing:'0.08em',whiteSpace:'nowrap'});
+    lbl.textContent=ct.n;c.appendChild(lbl);
+  });
+}
+function initGcDots(){
+  ['gcd-flow','gcd-rhythm'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    for(let i=0;i<28;i++){const d=document.createElement('div');d.className='gc-dot-item';el.appendChild(d);}
+  });
+}
+function initRhythmBars(){
+  const el=document.getElementById('rhythm-bars');if(!el)return;
+  [0.3,0.5,0.4,0.7,0.6,0.8,0.65,0.9,0.75,0.85].forEach(v=>{
+    const b=document.createElement('div');b.className='r-bar';b.style.height=(v*100)+'%';el.appendChild(b);
+  });
+}
+function pickCity(btn){btn.closest('.city-pills').querySelectorAll('.city-pill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function pickOpt(btn){btn.closest('.opt-group').querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function setDur(v){document.getElementById('dur-num').textContent=v;document.getElementById('range-fill').style.width=((v-5)/(21-5)*100)+'%';}
+const RATES={uzs:9130.4,kzt:347.2,kgs:62.4,usd:0.00072};
+function convertCurrency(krw){
+  const n=parseFloat(krw)||0;
+  const fmt=(v,d=0)=>v.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  document.getElementById('r-uzs').textContent=fmt(n*RATES.uzs/1000);
+  document.getElementById('r-kzt').textContent=fmt(n*RATES.kzt/1000);
+  document.getElementById('r-kgs').textContent=fmt(n*RATES.kgs/1000);
+  document.getElementById('r-usd').textContent=fmt(n*RATES.usd,2);
+}
+function toggleCheck(row){const box=row.querySelector('.check-box');row.classList.toggle('done');box.classList.toggle('on');}
+function setLang(lang,btn){document.querySelectorAll('.l-lang-btn').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');}
+
+/* ── Leaflet Map Logic ── */
+let map;
+let mapLayers = {};
+let mapMarkers = { camp: [], checkpoint: [], route: [] };
+let routeLine;
+let caravanMarker;
+
+function initMap() {
+  map = L.map('map', {
+    center: [42.0, 71.0],
+    zoom: 5,
+    zoomControl: false
+  });
+
+  mapLayers.std = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CartoDB'
+  });
+  mapLayers.sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{x}/{y}', {
+    attribution: 'Tiles &copy; Esri'
+  });
+  mapLayers.topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: 'Tiles &copy; OpenTopoMap'
+  });
+
+  mapLayers.std.addTo(map);
+
+  initCampSpots();
+  initBorderCheckpoints();
+
+  // Dynamic compass values on move
+  map.on('move', () => {
+    const center = map.getCenter();
+    document.getElementById('map-lat').textContent = Math.abs(center.lat).toFixed(4) + (center.lat >= 0 ? '° N' : '° S');
+    document.getElementById('map-lng').textContent = Math.abs(center.lng).toFixed(4) + (center.lng >= 0 ? '° E' : '° W');
+    
+    // Simulate tactical altitude estimation
+    let alt = Math.floor(620 + Math.sin(center.lat * 0.1) * Math.cos(center.lng * 0.1) * 2380);
+    if (alt < 30) alt = 48;
+    document.getElementById('map-alt').textContent = alt.toLocaleString() + 'm';
+  });
+}
+
+const CAMP_SPOTS = [
+  { name: '송쿨 호수 야영지 (Song-Kul Lake)', coords: [41.83, 74.83], desc: '해발 3,016m 고산 평원에 위치한 텐트 비박지. 밤하늘 은하수가 쏟아지는 관측 명소입니다.', elev: '3,016m' },
+  { name: '알틴 아라샨 온천지 (Altyn Arashan)', coords: [42.36, 78.60], desc: '만년설 텐산 산맥 아래 솟아나는 천연 노천 유황 온천. 침엽수림 속 백패킹 성지.', elev: '2,600m' },
+  { name: '차린 캐년 붉은 성벽 (Charyn Canyon)', coords: [43.35, 79.08], desc: '붉은 사암 기둥 아래 깊은 계곡 속 강바람이 불어오는 와일드 캠핑 스팟.', elev: '850m' },
+  { name: '아라콜 호수 전초기지 (Ala-Kul Lake)', coords: [42.32, 78.52], desc: '빙하가 녹아내린 옥빛 호수 바로 앞 극한 백패킹 비박지. 방한 장비 필수.', elev: '3,560m' },
+  { name: '아랄해 녹슨 배 무덤 (Muynak Shipyard)', coords: [43.76, 59.03], desc: '황량한 소금 사막 위에 홀로 남은 녹슨 고철선 옆 고독한 비박지.', elev: '30m' },
+  { name: '콜사이 제1호수 캠프 (Kolsay Lakes)', coords: [42.98, 78.32], desc: '거울처럼 투명한 호수 주변 침엽수 데크 야영장. 카자흐스탄의 요세미티.', elev: '1,818m' }
+];
+
+function initCampSpots() {
+  CAMP_SPOTS.forEach(spot => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="camp-marker">⛺</div>`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 13]
+    });
+    const m = L.marker(spot.coords, { icon: icon }).bindPopup(`
+      <div style="font-family:var(--f-b);padding:4px;max-width:200px;">
+        <h4 style="margin-bottom:4px;color:var(--tx0);font-weight:700;font-size:13px;">${spot.name}</h4>
+        <div style="font-size:10px;color:var(--teal);font-weight:700;margin-bottom:6px;">⛰️ 고도: ${spot.elev}</div>
+        <p style="font-size:11px;color:var(--tx2);line-height:1.4;">${spot.desc}</p>
+      </div>
+    `);
+    mapMarkers.camp.push(m);
+    m.addTo(map);
+  });
+}
+
+const BORDER_CHECKPOINTS = [
+  { name: '코르다이 / 악졸 (Korday / Ak-Zhol)', coords: [42.928, 74.743], desc: '알마티(KZ) ↔ 비슈케크(KG) 연결. 가장 유동인구가 많은 메인 국경입니다. 24시간 운영되며 마르시루트카와 공유 택시가 상시 운행합니다.' },
+  { name: '케겐 / 카르키라 (Kegen / Karkyra)', coords: [42.825, 79.183], desc: '알마티 동부(KZ) ↔ 카라콜(KG) 연결. 이식쿨 호수 동부 트레킹 지역 진입에 유용합니다. 대중교통이 드무니 차량 사전 수배 권장.' },
+  { name: '도스티크 / 두스트리크 (Dostyk / Dustlik)', coords: [40.533, 72.766], desc: '오시(KG) ↔ 안디잔(UZ) 연결. 페르가나 분지를 잇는 핵심 관문입니다. 24시간 운영되며 도보 통과자가 많습니다. ※ 드론 반입 금지 유의.' },
+  { name: '마다니야트 / 이즈보스칸 (Madaniyat / Izboskan)', coords: [40.833, 72.333], desc: '잘랄아바드(KG) ↔ 우즈벡 동부 연결. 양국 간 국경 획정 합의 이후 외국인 백패커들의 통행이 원활해진 주요 도로 국경입니다.' },
+  { name: '지벡 졸리 / 체르냐예브카 (Zhibek Joly / Chernyaevka)', coords: [41.472, 69.351], desc: '침켄트(KZ) ↔ 타슈켄트(UZ) 연결. 실크로드 육로 이동의 중심지입니다. 24시간 운영되나 상업 통행량이 많아 주말에는 정체가 심합니다.' },
+  { name: '오이베크 (Oybek)', coords: [40.612, 69.231], desc: '카자흐 남부(KZ) ↔ 타슈켄트 남부(UZ) 연결. 지벡 졸리가 정체될 때 이용하는 우회로입니다. 타지키스탄 후잔드 방향 이동 시에도 자주 이용됩니다.' }
+];
+
+function initBorderCheckpoints() {
+  BORDER_CHECKPOINTS.forEach(cz => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="camp-marker" style="border-color:var(--rose);color:var(--rose);">🛂</div>`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 13]
+    });
+    const m = L.marker(cz.coords, { icon: icon }).bindPopup(`
+      <div style="font-family:var(--f-b);padding:4px;">
+        <h4 style="margin-bottom:2px;color:var(--tx0);font-size:13px;font-weight:700;">${cz.name}</h4>
+        <p style="font-size:11px;color:var(--tx2);line-height:1.4;">${cz.desc}</p>
+      </div>
+    `);
+    mapMarkers.checkpoint.push(m);
+    m.addTo(map);
+  });
+}
+
+let currentRouteCoords = [];
+
+function pickPlannerStart(btn, city) {
+  document.querySelectorAll('#planner-start-city .city-pill').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function pickPlannerEnd(btn, city) {
+  document.querySelectorAll('#planner-end-city .city-pill').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function pickPlannerStyle(btn, style) {
+  document.querySelectorAll('#planner-style .city-pill').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function generateSchedule() {
+  const startBtn = document.querySelector('#planner-start-city .city-pill.on');
+  const endBtn = document.querySelector('#planner-end-city .city-pill.on');
+  const styleBtn = document.querySelector('#planner-style .city-pill.on');
+  const durVal = parseInt(document.getElementById('dur-range').value) || 15;
+
+  const startCity = startBtn ? startBtn.textContent.replace(/[^\uAC00-\uD7A3a-zA-Z]/g, '').trim() : '알마티';
+  const endCity = endBtn ? endBtn.textContent.replace(/[^\uAC00-\uD7A3a-zA-Z]/g, '').trim() : '비슈케크';
+  const travelStyle = styleBtn ? styleBtn.textContent.replace(/[^\uAC00-\uD7A3a-zA-Z\s\(\)]/g, '').trim() : '밸런스';
+
+  const viaKarakol = document.getElementById('wp-karakol').checked;
+  const viaCholpon = document.getElementById('wp-cholpon').checked;
+  const viaCharyn = document.getElementById('wp-charyn').checked;
+
+  document.getElementById('route-header-tag').textContent = `YOUR ROUTE · ${durVal} DAYS · ${travelStyle}`;
+
+  const isUzbek = (endCity.includes('타슈켄트') || startCity.includes('타슈켄트') || endCity.includes('사마르칸트'));
+  
+  let scheduleData = [];
+  if (isUzbek) {
+    currentRouteCoords = [
+      [41.2995, 69.2401], // Tashkent
+      [41.01, 69.15],
+      [40.83, 69.26],
+      [40.612, 69.231],   // Oybek Checkpoint
+      [40.35, 68.90],
+      [39.95, 68.20],
+      [39.80, 67.50],
+      [39.6542, 66.9597], // Samarkand
+      [39.88, 66.05],
+      [40.08, 65.37],
+      [40.12, 64.90],
+      [39.7747, 64.4286]  // Bukhara
+    ];
+
+    const pool = [
+      { code: 'UZ', city: '타슈켄트', desc: '타슈켄트 국제공항 도착 후 초르수 바자르에서 샤슬릭 저녁 식사 및 실크로드의 공기를 마십니다.' },
+      { code: 'UZ', city: '타슈켄트', desc: '타슈켄트 하스트 이맘 광장 방문. 세계에서 가장 오래된 우스만 코란 친필본 관람.' },
+      { code: 'UZ', city: '타슈켄트', desc: '타슈켄트 지하철 아트 투어 및 모스크 양식의 화려한 개찰구 투어 진행.' },
+      { code: 'UZ', city: '사마르칸트', desc: '고속열차 아프로시얍을 타고 실크로드의 심장 사마르칸트로 고속 이동.' },
+      { code: 'UZ', city: '사마르칸트', desc: '레기스탄 광장 3대 메드레세(울루그베크, 시르도르, 틸랴카리)의 옥빛 타일 조명 야경 조망.' },
+      { code: 'UZ', city: '사마르칸트', desc: '구르 에미르 묘(아미르 티무르 황제의 황금빛 돔 영묘) 및 샤히진다 푸른 돔 탐방.' },
+      { code: 'UZ', city: '사마르칸트', desc: '사마르칸트 전통 코니길 종이 공장 견학 및 뽕나무 껍질 종이 제작 체험.' },
+      { code: 'UZ', city: '부하라', desc: '열차를 타고 모래바람이 불어오는 오아시스 성곽 도시 부하라로 이동.' },
+      { code: 'UZ', city: '부하라', desc: '라비하우즈 연못가 그늘에서 전통 차(Chai)와 삼사를 마시며 유목민들의 여유 체험.' },
+      { code: 'UZ', city: '부하라', desc: '칼랸 미나레트와 모스크 탐방. 칭기즈칸도 압도당해 파괴하지 못한 유일한 거탑 관람.' },
+      { code: 'UZ', city: '부하라', desc: '부하라 아크 요새(왕의 궁전) 성벽 앞 선셋 사진 촬영 및 돔 바자르 쇼핑.' },
+      { code: 'UZ', city: '타슈켄트', desc: '부하라에서 타슈켄트로 복귀 열차 탑승. 현지 대형 몰에서 기념품(견과류, 꿀) 구매.' },
+      { code: 'UZ', city: '타슈켄트', desc: '우즈베키스탄 전통 플로프 센터 방문. 거대한 무쇠솥에 끓여낸 기름진 양고기 밥 시식.' },
+      { code: 'UZ', city: '타슈켄트', desc: '국립 역사박물관 관람 및 중앙아시아 고대 실크로드 불교 유물 탐험.' },
+      { code: 'UZ', city: '타슈켄트', desc: '아쉬가바트 공원 산책 및 최종 짐 정리 후 타슈켄트 국제공항으로 출국.' }
+    ];
+    scheduleData = adjustScheduleLength(pool, durVal);
+  } else {
+    currentRouteCoords = [];
+    currentRouteCoords.push([42.8746, 74.5698]); // Bishkek
+    currentRouteCoords.push([42.928, 74.743]);   // Korday Border Crossing
+    
+    if (viaCholpon) {
+      currentRouteCoords.push([42.89, 74.85]); // Kant
+      currentRouteCoords.push([42.84, 75.30]); // Tokmok
+      currentRouteCoords.push([42.78, 75.70]); // Kemin
+      currentRouteCoords.push([42.63, 75.88]); // Boom Canyon
+      currentRouteCoords.push([42.46, 76.18]); // Balykchy
+      currentRouteCoords.push([42.59, 76.66]); // Tamchy
+      currentRouteCoords.push([42.6469, 77.0848]); // Cholpon-Ata
+    }
+    
+    if (viaKarakol) {
+      currentRouteCoords.push([42.72, 77.65]); // Ananyevo
+      currentRouteCoords.push([42.73, 78.36]); // Tyup
+      currentRouteCoords.push([42.4907, 78.3936]); // Karakol
+      currentRouteCoords.push([42.333, 78.233]);   // Jeti-Oguz
+      currentRouteCoords.push([42.4907, 78.3936]); // Karakol
+    }
+
+    if (viaCharyn) {
+      currentRouteCoords.push([42.73, 78.36]); // Tyup
+      currentRouteCoords.push([42.825, 79.183]); // Kegen Border
+      currentRouteCoords.push([43.02, 79.22]);   // Kegen town
+      currentRouteCoords.push([43.35, 79.08]);   // Charyn Canyon
+      currentRouteCoords.push([43.24, 78.98]);   // Kokpek pass
+    } else {
+      currentRouteCoords.push([42.928, 74.743]); // Korday return
+    }
+    
+    currentRouteCoords.push([43.38, 78.43]); // Baiseit
+    currentRouteCoords.push([43.2389, 76.8897]); // Almaty
+
+    let pool = [
+      { code: 'KG', city: '비슈케크', desc: '비슈케크 마나스 국제공항 도착. 알라투 광장에서 장엄한 위병 교대식 관람.' },
+      { code: 'KG', city: '비슈케크', desc: '최대 재래시장인 오시 바자르에서 환전 및 유목민 전통 의상 체험.' },
+      { code: 'KG', city: '알라아르차', desc: '알라아르차 국립공원 만년설 협곡 하이킹. 침엽수림 속 야생화 길 트레킹.' },
+      { code: 'KG', city: '부라나', desc: '부라나 타워(11세기 소그드 실크로드 거탑) 유적 탐방 후 이식쿨 호수로 이동.' }
+    ];
+
+    if (viaCholpon) {
+      pool.push({ code: 'KG', city: '촐폰아타', desc: '촐폰아타 해변 휴양. 고대 암각화 야외 박물관 관람 및 호숫가 선셋 보트 투어.' });
+    }
+    if (viaKarakol) {
+      pool.push({ code: 'KG', city: '카라콜', desc: '카라콜 도착 후 목조 둔간 이슬람 모스크 및 정교회 성당 역사 투어.' });
+      pool.push({ code: 'KG', city: '알틴아라샨', desc: '알틴 아라샨 온천지 하이킹. 만년설 아래 솟아나는 천연 노천 유황 온천탕 피로 해소.' });
+      pool.push({ code: 'KG', city: '제티오그즈', desc: '제티오그즈 일곱 황소 바위 및 붉은 사암 언덕 트레킹.' });
+    }
+    if (viaCharyn) {
+      pool.push({ code: 'KZ', city: '차린캐년', desc: '차린 캐년 붉은 사암 협곡 하이킹. 웅장한 자연 기둥 아래 탐험.' });
+    }
+    
+    pool.push({ code: 'KZ', city: '알마티', desc: '콕토베 언덕 케이블카 탑승. 알마티 도심 전체 야경 조망 및 카자흐 맥주 시음.' },
+    { code: 'KZ', city: '알마티', desc: '젠코프 성당 관람 및 판필로프 공원 산책 후 알마티 국제공항으로 출국.' });
+
+    scheduleData = adjustScheduleLength(pool, durVal);
+  }
+
+  const container = document.getElementById('timeline-schedule');
+  container.innerHTML = `
+    <div style="position:absolute;left:27px;top:20px;bottom:20px;width:2px;background:rgba(0,0,0,0.06);z-index:1;"></div>
+  `;
+
+  scheduleData.forEach((day, idx) => {
+    const itemHtml = `
+      <div class="fu" style="display:flex;gap:16px;z-index:2;position:relative;margin-bottom:8px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#e3dfd8;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tx1);box-shadow:var(--sh-sm);flex-shrink:0;">
+          ${idx + 1}
+        </div>
+        <div class="pl-card" style="margin-bottom:0;flex:1;padding:16px 20px;border:1px solid rgba(0,0,0,0.03);background:var(--bg-card);border-radius:var(--r-md);">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-family:var(--f-m);font-size:9px;font-weight:700;color:var(--teal);letter-spacing:0.08em;text-transform:uppercase;">
+              ${day.code} · ${day.city}
+            </span>
+          </div>
+          <p style="font-family:var(--f-b);font-size:12px;color:var(--tx1);line-height:1.6;">
+            ${day.desc}
+          </p>
+        </div>
+      </div>
+    `;
+    container.innerHTML += itemHtml;
+  });
+
+  goPage('route');
+  triggerRouteHUDMap(isUzbek);
+}
+
+function adjustScheduleLength(pool, targetLen) {
+  if (pool.length === targetLen) return pool;
+  if (pool.length > targetLen) {
+    const result = [];
+    result.push(pool[0]);
+    const step = (pool.length - 2) / (targetLen - 2);
+    for (let i = 1; i < targetLen - 1; i++) {
+      const idx = Math.round(i * step);
+      result.push(pool[idx]);
+    }
+    result.push(pool[pool.length - 1]);
+    return result;
+  } else {
+    const result = [];
+    for (let i = 0; i < pool.length; i++) {
+      result.push(pool[i]);
+      if (i > 1 && i < pool.length - 2 && result.length < targetLen) {
+        result.push({
+          code: pool[i].code,
+          city: pool[i].city,
+          desc: pool[i].desc + " (추가 탐방 및 여유 일정)"
+        });
+      }
+    }
+    while (result.length < targetLen) {
+      result.splice(result.length - 2, 0, pool[Math.floor(pool.length / 2)]);
+    }
+    return result;
+  }
+}
+
+function triggerRouteHUDMap(isUzbek) {
+  if (routeLine) map.removeLayer(routeLine);
+  if (caravanMarker) map.removeLayer(caravanMarker);
+  mapMarkers.route.forEach(m => map.removeLayer(m));
+  mapMarkers.route = [];
+
+  routeLine = L.polyline(currentRouteCoords, {
+    color: '#1A6B78',
+    weight: 4,
+    opacity: 0.85,
+    dashArray: '8, 8'
+  }).addTo(map);
+
+  let HUD_CITIES = [];
+  if (isUzbek) {
+    HUD_CITIES = [
+      { id: 'NOMAD-03', city: '타슈켄트', coords: [41.2995, 69.2401], alt: '450m', spd: '0km/h', ping: 'ACTIVE' },
+      { id: 'BORDER-02', city: '오이베크 국경', coords: [40.612, 69.231], alt: '380m', spd: '30km/h', ping: 'TRANSIT' },
+      { id: 'CARAVAN-04', city: '사마르칸트', coords: [39.6542, 66.9597], alt: '702m', spd: '0km/h', ping: 'CAMPING' },
+      { id: 'NOMAD-05', city: '부하라', coords: [39.7747, 64.4286], alt: '225m', spd: '0km/h', ping: 'ACTIVE' }
+    ];
+  } else {
+    HUD_CITIES = [
+      { id: 'NOMAD-02', city: '비슈케크', coords: [42.8746, 74.5698], alt: '804m', spd: '60km/h', ping: 'ACTIVE' }
+    ];
+    
+    const viaKarakol = document.getElementById('wp-karakol').checked;
+    const viaCholpon = document.getElementById('wp-cholpon').checked;
+    const viaCharyn = document.getElementById('wp-charyn').checked;
+
+    HUD_CITIES.push({ id: 'BORDER-01', city: '코르다이 국경', coords: [42.928, 74.743], alt: '620m', spd: '20km/h', ping: 'TRANSIT' });
+    
+    if (viaCholpon) {
+      HUD_CITIES.push({ id: 'SATELLITE-01', city: '촐폰아타', coords: [42.6469, 77.0848], alt: '1,608m', spd: '0km/h', ping: 'CAMPING' });
+    }
+    if (viaKarakol) {
+      HUD_CITIES.push({ id: 'CARAVAN-01', city: '카라콜', coords: [42.4907, 78.3936], alt: '1,745m', spd: '10km/h', ping: 'ACTIVE' });
+    }
+    if (viaCharyn) {
+      HUD_CITIES.push({ id: 'NOMAD-07', city: '차린 캐년', coords: [43.35, 79.08], alt: '850m', spd: '0km/h', ping: 'ACTIVE' });
+    }
+    
+    HUD_CITIES.push({ id: 'NOMAD-01', city: '알마티', coords: [43.2389, 76.8897], alt: '773m', spd: '0km/h', ping: 'ACTIVE' });
+  }
+
+  const offsets = {
+    '비슈케크': 'margin-top:-64px;margin-left:-120px;',
+    '코르다이 국경': 'margin-top:-72px;margin-left:14px;',
+    '촐폰아타': 'margin-top:16px;margin-left:-60px;',
+    '카라콜': 'margin-top:-32px;margin-left:22px;',
+    '차린 캐년': 'margin-top:-64px;margin-left:20px;',
+    '알마티': 'margin-top:14px;margin-left:10px;',
+    '타슈켄트': 'margin-top:-64px;margin-left:-120px;',
+    '오이베크 국경': 'margin-top:16px;margin-left:-60px;',
+    '사마르칸트': 'margin-top:-64px;margin-left:22px;',
+    '부하라': 'margin-top:16px;margin-left:-60px;'
+  };
+
+  HUD_CITIES.forEach(c => {
+    const icon = L.divIcon({
+      className: '',
+      html: `
+        <div class="hud-marker" style="background:rgba(8,13,26,0.88);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:6px 10px;font-family:var(--f-m);font-size:8px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.3);min-width:110px;pointer-events:none;">
+          <div style="color:var(--rose);font-weight:700;margin-bottom:2px;">[${c.id}]</div>
+          <div style="color:rgba(255,255,255,0.65);">${c.city}</div>
+          <div style="color:rgba(255,255,255,0.45);margin-top:1px;">ALT: ${c.alt} / SPD: ${c.spd}</div>
+          <div style="color:var(--steppe-l);font-weight:700;margin-top:2px;">PING: ${c.ping}</div>
+        </div>
+      `,
+      iconSize: [120, 52],
+      iconAnchor: [60, 56]
+    });
+
+    const m = L.marker(c.coords, { icon: icon });
+    mapMarkers.route.push(m);
+    m.addTo(map);
+  });
+
+  const bounds = L.latLngBounds(currentRouteCoords);
+  map.flyToBounds(bounds, {
+    padding: [100, 100],
+    duration: 1.8,
+    easeLinearity: 0.2
+  });
+
+  animateCaravanHUD(isUzbek);
+}
+
+function animateCaravanHUD(isUzbek) {
+  let step = 0;
+  const totalSteps = 150;
+  
+  const caravanIcon = L.divIcon({
+    className: '',
+    html: `<div class="pulse-marker"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
+  });
+
+  caravanMarker = L.marker(currentRouteCoords[0], { icon: caravanIcon }).addTo(map);
+
+  const interval = setInterval(() => {
+    if (step >= totalSteps || cur !== 'route') {
+      clearInterval(interval);
+      return;
+    }
+    const pct = step / totalSteps;
+    const latlng = getPointAtPct(currentRouteCoords, pct);
+    caravanMarker.setLatLng(latlng);
+    step++;
+  }, 40);
+}
+
+function getPointAtPct(coords, pct) {
+  const n = coords.length;
+  const idx = Math.min(Math.floor(pct * (n - 1)), n - 2);
+  const segmentPct = (pct * (n - 1)) - idx;
+  const p1 = coords[idx];
+  const p2 = coords[idx + 1];
+  return [
+    p1[0] + (p2[0] - p1[0]) * segmentPct,
+    p1[1] + (p2[1] - p1[1]) * segmentPct
+  ];
+}
+
+function resetToDefaultMap() {
+  if (routeLine) map.removeLayer(routeLine);
+  if (caravanMarker) map.removeLayer(caravanMarker);
+  mapMarkers.route.forEach(m => map.removeLayer(m));
+  
+  map.flyTo([42.0, 71.0], 5, {
+    duration: 1.5
+  });
+}
+
+/* ── Dutch Pay Logic ── */
+let expenses = [
+  { item: '알마티 게스트하우스', amount: 36000, cur: 'KZT', payer: '민우' },
+  { item: '비슈케크 식비', amount: 4800, cur: 'KGS', payer: '지선' },
+  { item: '타슈켄트 택시비', amount: 80000, cur: 'UZS', payer: '현우' }
+];
+
+const CUR_TO_KRW = {
+  KRW: 1.0,
+  KZT: 3.0,
+  KGS: 16.0,
+  UZS: 0.11
+};
+
+function addExpense() {
+  const itemIn = document.getElementById('exp-item');
+  const payerIn = document.getElementById('exp-payer');
+  const amountIn = document.getElementById('exp-amount');
+  const curIn = document.getElementById('exp-cur');
+
+  const item = itemIn.value.trim();
+  const payer = payerIn.value;
+  const amount = parseFloat(amountIn.value);
+  const cur = curIn.value;
+
+  if (!item || isNaN(amount) || amount <= 0) {
+    alert('올바른 지출 내역과 금액을 입력해주세요.');
+    return;
+  }
+
+  expenses.push({ item, payer, amount, cur });
+  
+  itemIn.value = '';
+  amountIn.value = '';
+
+  renderExpenses();
+}
+
+function clearExpenses() {
+  expenses = [];
+  renderExpenses();
+}
+
+function renderExpenses() {
+  const list = document.getElementById('expense-list-container');
+  if (!list) return;
+
+  list.innerHTML = '';
+  
+  if (expenses.length === 0) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:12px 0;">등록된 지출 내역이 없습니다.</div>';
+    document.getElementById('dutch-result').innerHTML = '등록된 경비가 없습니다.';
+    return;
+  }
+
+  expenses.forEach((exp, idx) => {
+    const krwVal = Math.round(exp.amount * CUR_TO_KRW[exp.cur]);
+    const d = document.createElement('div');
+    d.style = 'display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:8px 12px;border-radius:6px;font-size:11px;';
+    d.innerHTML = `
+      <div>
+        <span style="font-weight:700;color:var(--tx0);">${exp.item}</span>
+        <span style="color:var(--tx2);margin-left:6px;">(${exp.payer})</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--f-m);font-weight:700;color:var(--tx0);">${exp.amount.toLocaleString()} ${exp.cur} <span style="font-size:9px;color:var(--tx3);font-weight:400;">(₩${krwVal.toLocaleString()})</span></span>
+        <button onclick="deleteExpense(${idx})" style="color:var(--rose);font-weight:700;cursor:pointer;font-size:12px;">✕</button>
+      </div>
+    `;
+    list.appendChild(d);
+  });
+
+  calculateDutchPay();
+}
+
+function deleteExpense(idx) {
+  expenses.splice(idx, 1);
+  renderExpenses();
+}
+
+function calculateDutchPay() {
+  const members = ['민우', '지선', '현우'];
+  const paid = { '민우': 0, '지선': 0, '현우': 0 };
+
+  expenses.forEach(exp => {
+    const krw = exp.amount * CUR_TO_KRW[exp.cur];
+    paid[exp.payer] += krw;
+  });
+
+  let totalKRW = 0;
+  members.forEach(m => totalKRW += paid[m]);
+  const share = totalKRW / 3;
+
+  const balances = {};
+  members.forEach(m => {
+    balances[m] = paid[m] - share;
+  });
+
+  let debtors = [];
+  let creditors = [];
+  members.forEach(m => {
+    if (balances[m] < -1) {
+      debtors.push({ name: m, balance: -balances[m] });
+    } else if (balances[m] > 1) {
+      creditors.push({ name: m, balance: balances[m] });
+    }
+  });
+
+  let txs = [];
+  let dIdx = 0, cIdx = 0;
+  while (dIdx < debtors.length && cIdx < creditors.length) {
+    let d = debtors[dIdx];
+    let c = creditors[cIdx];
+    let amt = Math.min(d.balance, c.balance);
+    txs.push({ from: d.name, to: c.name, amount: Math.round(amt) });
+    d.balance -= amt;
+    c.balance -= amt;
+    if (d.balance < 1) dIdx++;
+    if (c.balance < 1) cIdx++;
+  }
+
+  const resultContainer = document.getElementById('dutch-result');
+  if (!resultContainer) return;
+
+  if (txs.length === 0) {
+    resultContainer.innerHTML = '<div>총 지출: ₩' + Math.round(totalKRW).toLocaleString() + ' (인당 ₩' + Math.round(share).toLocaleString() + ')</div><div style="font-weight:700;color:var(--steppe);margin-top:4px;">정산 금액이 일치합니다.</div>';
+    return;
+  }
+
+  let html = `<div style="font-weight:500;color:var(--tx2);margin-bottom:6px;">총 지출: ₩${Math.round(totalKRW).toLocaleString()} (인당 ₩${Math.round(share).toLocaleString()})</div>`;
+  txs.forEach(tx => {
+    html += `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:6px 10px;border-radius:6px;border:1px solid rgba(0,0,0,0.03);">
+        <span><strong style="color:var(--rose);">${tx.from}</strong> ➔ <strong style="color:var(--teal);">${tx.to}</strong></span>
+        <span style="font-weight:700;color:var(--tx0);">₩${tx.amount.toLocaleString()}</span>
+      </div>
+    `;
+  });
+  resultContainer.innerHTML = html;
+}
+
+/* ── Local Store & Community Script Logic ── */
+const STORE_DATA = [
+  { name: '아라아르차 국립공원 입장 허가서', price: 2500, cur: 'KGS', cat: '국립공원', c: '키르기스스탄', desc: '비슈케크 인근 알라아르차 국립공원 차량 및 인원 공식 하이킹 퍼밋.', img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80' },
+  { name: '차린 협곡 국립공원 입장권', price: 4500, cur: 'KZT', cat: '입장티켓', c: '카자흐스탄', desc: '붉은 사암 협곡 차린 캐년 보호구역 통과 및 계곡 입장 승인권.', img: 'https://images.unsplash.com/photo-1500627869374-13cd993b1115?auto=format&fit=crop&w=600&q=80' },
+  { name: '중앙아시아 3국 통합 eSIM (10GB)', price: 18500, cur: 'KRW', cat: '데이터/통신', c: '공통인프라', desc: '카자흐스탄, 키르기스스탄, 우즈베키스탄에서 자동 로밍 전환되는 30일 데이터 유심.', img: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80' },
+  { name: '다국적 오버랜드 여행자 종합 보험', price: 24000, cur: 'KRW', cat: '안전/보험', c: '공통인프라', desc: '오지 트레킹 및 오버랜드 국경 도로 이동 시 상해/질병 보장 종합 플랜.', img: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80' },
+  { name: '타슈켄트-사마르칸트 아프라시압 초고속 열차 대행권', price: 120000, cur: 'UZS', cat: '철도대행', c: '우즈베키스탄', desc: '황금 시간대 아프로시얍 고속철 좌석을 수수료 없이 확보하는 예약 대행권.', img: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=600&q=80' }
+];
+
+function renderStore() {
+  const container = document.getElementById('store-cards-container');
+  if (!container) return;
+  container.innerHTML = STORE_DATA.map(item => `
+    <div class="pl-card" style="padding:0;overflow:hidden;border:1px solid rgba(0,0,0,0.03);display:flex;flex-direction:column;background:var(--bg-card);border-radius:var(--r-md);margin-bottom:16px;">
+      <img src="${item.img}" style="width:100%;height:140px;object-fit:cover;" loading="lazy">
+      <div style="padding:16px;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-family:var(--f-m);font-size:9px;font-weight:700;color:var(--teal);letter-spacing:0.08em;text-transform:uppercase;">
+          ${item.cat} · ${item.c}
+        </div>
+        <h4 style="font-family:var(--f-b);font-size:13px;font-weight:700;color:var(--tx0);">${item.name}</h4>
+        <p style="font-family:var(--f-b);font-size:11px;color:var(--tx2);line-height:1.5;">${item.desc}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.05);">
+          <span style="font-family:var(--f-d);font-size:15px;font-weight:900;color:var(--tx0);">${item.price.toLocaleString()} <span style="font-size:9px;color:var(--tx2);font-weight:500;">${item.cur}</span></span>
+          <button onclick="openPayment('${item.name.replace(/'/g, "\\'")}', '${item.price}', '${item.cur}')" style="background:var(--tx0);color:white;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;">구매하기</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+let activePayMethod = 'kakao';
+function openPayment(name, price, cur) {
+  document.getElementById('pay-title').textContent = name;
+  document.getElementById('pay-price').textContent = price;
+  document.getElementById('pay-cur').textContent = cur;
+  document.getElementById('payment-overlay').style.display = 'flex';
+  selectPayTab('kakao');
+}
+
+function closePayment() {
+  document.getElementById('payment-overlay').style.display = 'none';
+}
+
+function selectPayTab(method) {
+  activePayMethod = method;
+  document.querySelectorAll('.pay-method-tab-btn').forEach(btn => {
+    btn.style.borderColor = 'transparent';
+  });
+  
+  const activeBtn = document.getElementById('pay-tab-' + method);
+  if (activeBtn) activeBtn.style.borderColor = 'var(--teal)';
+  
+  const title = method === 'kakao' ? '카카오페이 QR 결제스캔' : method === 'naver' ? '네이버페이 QR 결제스캔' : method === 'toss' ? '토스 QR 결제스캔' : 'PayPal QR Scan';
+  const qrColor = method === 'kakao' ? 'fee500' : method === 'naver' ? '03c75a' : method === 'toss' ? '0064ff' : '003087';
+  
+  document.getElementById('qr-title').textContent = title;
+  
+  const name = document.getElementById('pay-title').textContent;
+  const price = document.getElementById('pay-price').textContent;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=${qrColor}&data=NOMADISM_PAYMENT_${method}_${encodeURIComponent(name)}_${price}`;
+  document.getElementById('qr-image').src = qrUrl;
+}
+
+function submitPayment() {
+  const name = document.getElementById('pay-name').value.trim();
+  const email = document.getElementById('pay-email').value.trim();
+  const item = document.getElementById('pay-title').textContent;
+  
+  if (!name || !email) {
+    alert('예약자 성함과 이메일 주소를 입력해주세요.');
+    return;
+  }
+  
+  alert(`결제가 완료되었습니다!\n구매 상품: ${item}\n발권 확인 메일이 ${email}로 발송되었습니다.`);
+  closePayment();
+}
+
+/* ── Community Board ── */
+let postsList = [
+  {
+    id: 1,
+    type: '정보',
+    title: '비슈케크 → 카라콜 셰어택시 정찰가 & 탑승 꿀팁',
+    author: '배낭매니아',
+    body: '셰어택시 정찰가: 비슈케크 서부터미널 기준 450~500솜 (2026.07 기준).\n\n📌 팁: 새벽 6~7시 출발이 제일 자리 잡기 좋음. 오전 10시 이후는 합승 완성까지 한 시간 이상 기다릴 수 있음.',
+    comments: [
+      { author: '이식쿨러버', text: '이 정보 덕분에 첫날 바로 카라콜 도착했어요!' }
+    ]
+  },
+  {
+    id: 2,
+    type: '경고',
+    title: '타슈켄트 공항 환전소 환율 주의 — 시세 대비 15% 손해',
+    author: '실크로드고수',
+    body: '공항 환전소 절대 이용 금지. 공항에서 100달러 환전하면 10달러 이상 무조건 손해봅니다. 시내 사설 환전소나 ATM 인출이 훨씬 유리합니다.',
+    comments: []
+  }
+];
+
+function initCommunity() {
+  const cached = localStorage.getItem('nomadism_posts');
+  if (cached) {
+    try { postsList = JSON.parse(cached); } catch(e) {}
+  }
+  renderPosts();
+}
+
+function toggleWriteForm() {
+  const form = document.getElementById('comm-write-form');
+  form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+}
+
+function submitPost() {
+  const author = document.getElementById('comm-author').value.trim();
+  const pw = document.getElementById('comm-pw').value.trim();
+  const type = document.getElementById('comm-type').value;
+  const title = document.getElementById('comm-title').value.trim();
+  const body = document.getElementById('comm-body').value.trim();
+
+  if (!author || !pw || !title || !body) {
+    alert('모든 게시물 항목을 채워주세요.');
+    return;
+  }
+
+  postsList.unshift({
+    id: Date.now(),
+    type,
+    title,
+    author,
+    body,
+    comments: []
+  });
+
+  localStorage.setItem('nomadism_posts', JSON.stringify(postsList));
+  toggleWriteForm();
+  
+  document.getElementById('comm-author').value = '';
+  document.getElementById('comm-pw').value = '';
+  document.getElementById('comm-title').value = '';
+  document.getElementById('comm-body').value = '';
+
+  renderPosts();
+}
+
+function renderPosts() {
+  const container = document.getElementById('comm-feed-container');
+  if (!container) return;
+
+  container.innerHTML = postsList.map(post => {
+    const badgeColor = post.type === '정보' ? 'var(--teal)' : post.type === '질문' ? 'var(--blue)' : post.type === '동행' ? 'var(--steppe)' : post.type === '경고' ? 'var(--rose)' : 'var(--tx3)';
+    return `
+      <div class="pl-card" style="padding:16px;border:1px solid rgba(0,0,0,0.03);background:var(--bg-card);border-radius:var(--r-md);display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="background:${badgeColor};color:white;font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px;font-family:var(--f-m);">${post.type}</span>
+          <span style="font-size:10px;color:var(--tx3);font-family:var(--f-m);">${post.author}</span>
+        </div>
+        <h4 style="font-family:var(--f-b);font-size:13px;font-weight:700;color:var(--tx0);cursor:pointer;" onclick="togglePostContent(${post.id})">${post.title}</h4>
+        
+        <div id="post-body-${post.id}" style="display:none;margin-top:6px;border-top:1px solid rgba(0,0,0,0.04);padding-top:8px;">
+          <p style="font-family:var(--f-b);font-size:12px;color:var(--tx1);line-height:1.6;white-space:pre-line;margin-bottom:12px;">${post.body}</p>
+          
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;" id="post-comments-${post.id}">
+            ${post.comments.map(c => `
+              <div style="background:var(--bg);padding:6px 10px;border-radius:6px;font-size:11px;">
+                <strong style="color:var(--tx0);">${c.author}:</strong> <span style="color:var(--tx1);">${c.text}</span>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="com-author-${post.id}" placeholder="닉네임" style="width:60px;background:white;border:1px solid rgba(0,0,0,0.06);padding:6px;border-radius:4px;font-size:10px;outline:none;">
+            <input type="text" id="com-text-${post.id}" placeholder="댓글을 입력하세요..." style="flex:1;background:white;border:1px solid rgba(0,0,0,0.06);padding:6px;border-radius:4px;font-size:10px;outline:none;">
+            <button onclick="submitComment(${post.id})" style="background:var(--teal);color:white;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;border:none;cursor:pointer;">등록</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function togglePostContent(id) {
+  const body = document.getElementById('post-body-' + id);
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+function submitComment(postId) {
+  const authorIn = document.getElementById('com-author-' + postId);
+  const textIn = document.getElementById('com-text-' + postId);
+  
+  const author = authorIn.value.trim();
+  const text = textIn.value.trim();
+  
+  if (!author || !text) {
+    alert('댓글 닉네임과 내용을 모두 입력해주세요.');
+    return;
+  }
+  
+  const post = postsList.find(p => p.id === postId);
+  if (post) {
+    post.comments.push({ author, text });
+    localStorage.setItem('nomadism_posts', JSON.stringify(postsList));
+    authorIn.value = '';
+    textIn.value = '';
+    renderPosts();
+    document.getElementById('post-body-' + postId).style.display = 'block';
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  initLandingDots();
+  initGcDots();
+  initRhythmBars();
+  convertCurrency(100000);
+  initMap();
+  renderExpenses();
+  renderStore();
+  initCommunity();
+});
+</script>
+</body>
+</html>
